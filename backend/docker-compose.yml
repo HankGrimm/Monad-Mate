@@ -52,7 +52,7 @@ services:
   worker:
     image: hackathon-aibuddy:latest
     container_name: Hackathon_worker
-    command: celery -A app.tasks.celery_app beat --loglevel=info
+    command: celery -A app.tasks.celery_app worker --loglevel=info
     env_file: .env
     environment:
       DATABASE_URL: postgresql://monadmate:monadmate@db:5432/monadmate

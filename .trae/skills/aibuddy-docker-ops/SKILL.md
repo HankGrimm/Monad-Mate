@@ -116,6 +116,10 @@ docker exec Hackathon_api python scripts/demo_seed.py --base-url http://localhos
 | 前端按钮跳转到错误地址 | 组件里 API_URL 写死了绝对地址，改回 `"/api"` |
 | 改了 .env 不生效 | `docker compose up -d` 重建容器（不是 restart） |
 | 拉新代码后接口 500 `column xxx does not exist` | 模型加了新列但旧表不会自动加列（create_all 只建新表）。演示库清空重建：`docker exec Hackathon_db psql -U monadmate -d monadmate -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"` 然后 `docker restart Hackathon_api`。有数据则需写 Alembic 迁移 |
+| 押金报错 `Could not place the deposit`（estimate revert） | 链上 vault 被 (钱包, matchId) 占用。revert 码 `0x36c9ceb9`=StakeAlreadyExists。合约设计 vault 一次性：None→Active→Refunded/Slashed 后**同 key 永久不可再押**（Refunded≠None）。admin（=MONAD_PRIVATE_KEY）可调 `refund(address,bytes32)` 退还解锁余额，但该 match 需换新 match 才能重押。新 match 押金正常（gas≈117k） |
+| 托管账号（邮箱登录）链上押金 | 必然失败：verify_deposit 校验 tx from == 托管地址，而浏览器钱包是外部地址。链上押金只能由外部钱包登录（钱包连接）的用户完成；要全账号顺畅押金用演示模式（MONAD_DEPOSIT_ADDRESS 置空 → onchain_required=false 仅记账） |
+| 原生 SQL 改 sm_ 表枚举 | DB 枚举标签是 Python 枚举名大写（'ACTIVE'/'REFUNDED'），API 返回的是小写值；psql 里必须用大写 |
+| RPC `get_logs` 全量扫描 413 / `Archive error` | Monad 公共节点限制。改用 getStake 视图函数按 key 查询，或 receipt 查询加重试 |
 
 ## 本地模型服务（LLM + embeddings，2026-09-05 接入）
 
