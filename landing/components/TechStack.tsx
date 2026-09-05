@@ -2,8 +2,8 @@ const STACK = [
   {
     category: "Blockchain",
     items: [
-      { name: "Monad", desc: "EIP-191 wallet auth, EventLog, Solidity escrow" },
-      { name: "Foundry", desc: "Escrow + event log contracts, forge test suite" },
+      { name: "Monad", desc: "EIP-191 wallet auth, escrow, event log, soulbound credentials" },
+      { name: "Foundry", desc: "Escrow, event log, and SBT contracts with forge tests" },
       { name: "Hedera HCS", desc: "Immutable audit log for attestations" },
       { name: "Base (Coinbase)", desc: "x402 HTTP payment protocol" },
     ],
@@ -11,16 +11,16 @@ const STACK = [
   {
     category: "Backend",
     items: [
-      { name: "FastAPI", desc: "27 service classes, 40+ endpoints" },
-      { name: "SQLAlchemy 2.0", desc: "13 ORM models, PgBouncer connection pooling" },
-      { name: "Celery + Redis", desc: "Hourly slash eval, match expiry, decay" },
-      { name: "PostgreSQL", desc: "14 tables, sm_ prefix, 324 tests passing" },
+      { name: "FastAPI", desc: "30 service classes, 50+ endpoints" },
+      { name: "SQLAlchemy 2.0", desc: "17 ORM models, PgBouncer connection pooling" },
+      { name: "Celery + Redis", desc: "Deposit review, match expiry, credit refresh" },
+      { name: "PostgreSQL", desc: "sm_ prefixed schema, full pytest suite" },
     ],
   },
   {
     category: "AI / Infra",
     items: [
-      { name: "llama-3.3-70b", desc: "Personalized intro generation via AINative" },
+      { name: "llama-3.3-70b", desc: "Icebreakers and short plans via AINative" },
       { name: "ZeroDB", desc: "768-dim BAAI/bge vectors for preference matching" },
       { name: "Hedera HCS", desc: "Tamper-proof audit log for safety decisions" },
       { name: "AINative Studio", desc: "LLM inference + embedding API" },
@@ -30,9 +30,9 @@ const STACK = [
     category: "Mobile / DApp",
     items: [
       { name: "Progressive Web App", desc: "Add to Home Screen, installable on any mobile browser" },
-      { name: "MetaMask / Rabby", desc: "Wallet sign-in adapters" },
-      { name: "APK sideload", desc: "Direct install for Android testers" },
-      { name: "x402 Protocol", desc: "0.5 USDC per DM on Base" },
+      { name: "Managed accounts", desc: "Email or phone login, no seed phrase or gas" },
+      { name: "MetaMask / Rabby", desc: "Self-custody sign-in for wallet users" },
+      { name: "x402 Protocol", desc: "USDC payment gate on Base" },
     ],
   },
 ];
@@ -77,10 +77,10 @@ export default function TechStack() {
         {/* Live stats bar */}
         <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
-            { value: "324", label: "Tests passing", sub: "94% coverage" },
-            { value: "40+", label: "API endpoints", sub: "9 domains" },
-            { value: "27", label: "Service classes", sub: "fully tested" },
-            { value: "Foundry", label: "Solidity contracts", sub: "ready for Monad testnet" },
+            { value: "451", label: "Tests passing", sub: "backend suite" },
+            { value: "50+", label: "API endpoints", sub: "12 domains" },
+            { value: "30", label: "Service classes", sub: "fully tested" },
+            { value: "3", label: "Solidity contracts", sub: "ready for Monad testnet" },
           ].map((stat) => (
             <div
               key={stat.label}

@@ -2,7 +2,7 @@ from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 from uuid import UUID
-from ..models.user import VerificationLevel, PrivacyMode
+from ..models.user import VerificationLevel, PrivacyMode, Gender, WalletKind
 
 
 class UserOnboard(BaseModel):
@@ -15,12 +15,18 @@ class UserOnboard(BaseModel):
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     privacy_mode: Optional[PrivacyMode] = None
+    gender: Optional[Gender] = Field(
+        None, description="Required before using the same-gender-only match preference."
+    )
+    birth_year: Optional[int] = Field(None, ge=1900, le=2020)
 
 
 class UserResponse(BaseModel):
     id: UUID
     wallet_address: str
+    wallet_kind: WalletKind
     did: Optional[str]
+    gender: Gender
     age_verified: bool
     verification_level: VerificationLevel
     privacy_mode: PrivacyMode

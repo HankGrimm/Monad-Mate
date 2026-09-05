@@ -1,24 +1,28 @@
-# Monad Mate — Machine-Readable Agent Guide
+# MonadMate — Machine-Readable Agent Guide
 
 ## Overview
 
-Monad Mate is a trust-based social dApp on Monad. Stake MON to DM, match, and meet. No-shows get slashed. AI matchmaking powered by AINative.
+MonadMate matches people who are in the same mall or supermarket right now and want to do the same thing in the next hour. Matching is constrained to the same venue and an overlapping time window; a small MON commitment deposit and a soulbound fulfilment credential make attendance meaningful.
 
 ## Core APIs
 
-**Authentication** — Wallet signature challenge flow → JWT bearer token
+**Authentication** — Two paths: passwordless email/phone code (managed custodial account, no seed phrase or gas) or EIP-191 wallet signature challenge. Both return a JWT bearer token.
 
-**Stakes** — Create MON stakes for DMs, room entry, or meetups
+**Meetup requests** — Post an on-site intent scoped to a venue, scene, and time window.
 
-**Matching** — AI-powered match requests with generated intro messages
+**Candidates** — Ranked same-venue candidates with human-readable reasons. Empty when nothing qualifies.
 
-**Messaging** — Stake-gated DMs between matched users
+**Confirmation** — Two-sided handshake; either party can pass with no credit impact.
 
-**Attestations** — GPS-verified meetup confirmation
+**Deposits** — Escrow MON as a commitment to your own attendance; refunded on mutual check-in.
 
-**Transfers** — Gift MON to another user
+**Attestations** — GPS, BLE, or QR meetup check-in requiring both parties.
 
-**Moment NFTs** — Mint commemorative NFTs for confirmed meetups
+**Credentials** — Soulbound fulfilment records; metadata excludes the counterparty.
+
+**Credit** — Follow-through score, gated behind 5 fulfilments, never a safety guarantee.
+
+**Safety** — Reports, bidirectional blocks, and hard preference filters (same-gender-only, verified-only, minimum reputation).
 
 ## API Base
 ```
@@ -26,21 +30,40 @@ https://monad-mate-trust-api-production.up.railway.app
 ```
 
 ## Authentication
-JWT via wallet signature. Challenge-response flow.
+JWT. Either a managed login code exchange or a wallet signature challenge.
 Header: `Authorization: Bearer <token>`
 
 ## Key Endpoints
 ```
-POST /api/v1/auth/wallet/connect   Wallet auth
-GET  /api/v1/rooms                 Discover rooms
-POST /api/v1/stakes                Create stake
-POST /api/v1/matches               Request match
-POST /api/v1/messages              Send message
-POST /api/v1/attestations          Submit attestation
-POST /api/v1/transfers             Gift MON
-POST /api/v1/nfts/mint-moment      Mint Moment NFT
-GET  /api/v1/nfts/moments          List Moment NFTs
+POST /v1/wallet/login/code                              Request login code
+POST /v1/wallet/login/verify                            Exchange code for session
+GET  /v1/wallet/me                                      Wallet state + custody disclosure
+POST /v1/wallet/link-external                           Move to self-custody
+POST /v1/users/challenge                                Wallet nonce challenge
+POST /v1/users/onboard                                  Verify signature, return JWT
+PATCH /v1/users/me                                      Set gender / birth year
+POST /v1/meetups/requests                               Post a meetup intent
+GET  /v1/meetups/requests                               List my requests
+GET  /v1/meetups/requests/{id}/candidates               Ranked candidates
+POST /v1/meetups/requests/{id}/propose/{other_id}       Accept a candidate
+GET  /v1/meetups/requests/{id}/matches                  List pairings
+POST /v1/meetups/matches/{id}/respond                   Accept or pass
+POST /v1/meetups/requests/{id}/cancel                   Withdraw
+POST /v1/stakes                                         Escrow deposit
+POST /v1/attestations/meetup/initiate                   Start check-in
+POST /v1/attestations/meetup/{id}/confirm               Confirm check-in
+GET  /v1/credentials/me                                 List credentials
+GET  /v1/credentials/me/credit                          Follow-through credit
+POST /v1/safety/report                                  File a report
+POST /v1/safety/block                                   Block a user
 ```
+
+## Constraints agents should respect
+- Identity verification is required before creating or accepting a meetup.
+- One active request per user at a time.
+- Candidates must share the `venue_key`, the scene, and an overlapping window — no cross-venue matching exists.
+- Safety preferences are hard filters applied in both directions; they cannot be overridden by a high score.
+- Credit responses always carry a disclaimer that the score is not a personal-safety guarantee.
 
 ## SDKs
 ```bash

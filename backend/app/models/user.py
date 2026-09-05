@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Enum as SAEnum
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -22,13 +22,38 @@ class PrivacyMode(str, enum.Enum):
     PRIVATE = "private"
 
 
+class Gender(str, enum.Enum):
+    """Self-declared gender. Only used to enforce R10 same-gender matching."""
+    FEMALE = "female"
+    MALE = "male"
+    OTHER = "other"
+    UNDISCLOSED = "undisclosed"
+
+
+class WalletKind(str, enum.Enum):
+    """How the user's wallet is controlled.
+
+    ``EXTERNAL`` — the user signs with MetaMask/Rabby (Web3-native, 画像A).
+    ``MANAGED`` — an AA/custodial account provisioned by the backend, so the
+    user never sees a seed phrase or gas (画像B onboarding path).
+    """
+    EXTERNAL = "external"
+    MANAGED = "managed"
+
+
 class User(Base):
     __tablename__ = "sm_users"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     wallet_address = Column(String, unique=True, nullable=False, index=True)
+    wallet_kind = Column(
+        SAEnum(WalletKind), default=WalletKind.EXTERNAL, nullable=False
+    )
     did = Column(String, unique=True, nullable=True)
     email = Column(String, unique=True, nullable=True)
+    phone = Column(String, unique=True, nullable=True)
+    gender = Column(SAEnum(Gender), default=Gender.UNDISCLOSED, nullable=False)
+    birth_year = Column(Integer, nullable=True)
     age_verified = Column(Boolean, default=False, nullable=False)
     verification_level = Column(
         SAEnum(VerificationLevel), default=VerificationLevel.WALLET, nullable=False

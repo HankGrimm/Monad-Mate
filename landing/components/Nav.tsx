@@ -34,7 +34,7 @@ export default function Nav() {
         <a href="#" className="flex items-center gap-2">
           <span className="text-2xl">💜</span>
           <span className="font-bold text-lg tracking-tight">
-            Sol<span className="text-gradient">Mate</span>
+            Monad<span className="text-gradient">Mate</span>
           </span>
         </a>
 

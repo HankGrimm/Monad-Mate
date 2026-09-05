@@ -11,6 +11,9 @@ build/
 .venv/
 venv/
 node_modules/
+landing/.next/
+landing/out/
+*.tsbuildinfo
 .DS_Store
 *.log
 *.bak

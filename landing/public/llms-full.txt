@@ -1,11 +1,11 @@
-# Monad Mate — Full Machine-Readable Manifest
+# MonadMate — Full Machine-Readable Manifest
 # https://monad-mate-landing-production.up.railway.app
-# Updated: 2026-05-06
+# Updated: 2026-09-05
 
 ## IDENTITY
-Name: Monad Mate
-Tagline: Stake MON to DM, match, and meet. No-shows get slashed on Monad.
-Type: Social dApp — Web3 / Monad
+Name: MonadMate
+Tagline: Find someone to hang out with in the mall you're already in.
+Type: Instant offline companion matching — Web3 / Monad
 Hackathon: EasyA × Consensus Miami 2026
 Built by: HankGrimm (https://github.com/HankGrimm)
 Network: Monad (testnet), Base (Coinbase x402)
@@ -13,124 +13,181 @@ API: https://monad-mate-trust-api-production.up.railway.app
 Docs: https://monad-mate-trust-api-production.up.railway.app/docs
 
 ## HOW IT WORKS
-1. Connect MetaMask or Rabby wallet
-2. Stake MON to send a DM, enter a room, or propose a meetup
-3. Both parties must confirm (GPS attestation) for meetup to count
-4. No-show → stake slashed. Show up → stake returned + reputation boost
-5. After a confirmed meetup, mint a Moment NFT as proof of connection
+1. Sign in with an email or phone code (managed account, no seed phrase or gas) or connect MetaMask/Rabby
+2. Complete identity verification — required before creating or accepting a meetup
+3. Post what you want to do in the next hour, scoped to the mall or supermarket you're in
+4. Review ranked candidates at the same venue, each with the reasons it surfaced
+5. Both sides confirm; either can pass with no credit impact
+6. Both escrow a small MON commitment deposit
+7. Meet, then check in with GPS or QR — deposits return and a soulbound credential is minted
 
-## STAKE TYPES
-| Type | Minimum stake | Slashing trigger |
-|------|--------------|-----------------|
-| DM   | 0.01 MON    | Sender no-show or harassment |
-| Room entry | 0.10 MON | No-show at event |
-| Meetup | 1.00 MON | No-show (GPS unconfirmed) |
+## HARD CONSTRAINTS (never traded off against score)
+- Same venue_key (stable POI id — same key means same building)
+- Same scene: dining / entertainment / shopping
+- Overlapping time window
+- Both requests still open
+- Neither party has blocked the other (checked in both directions)
+- Both sides' safety preferences satisfied
 
-## SLASHING POLICY
-| Reason | Slash % | Notes |
-|--------|---------|-------|
-| NO_SHOW | 50% base, escalating | 0.5× per offense, 3× maximum multiplier |
-| HARASSMENT | 100% | Always slashed, no appeal |
-| FAKE_PROFILE | 100% | Always slashed |
-| CONSENT_VIOLATION | 100% | Always slashed |
-| SPAM | 30% | First offense warning |
-| PAYMENT_FRAUD | 100% | Always slashed |
+An empty result set is returned when nothing qualifies. Candidates are never padded.
 
-## REPUTATION DIMENSIONS
-1. Reliability — shows up when committed
-2. Safety — no harassment or consent violations reported
-3. Communication — responds within reasonable time
-4. Punctuality — arrives on time for meetups
-5. Authenticity — profile matches real identity (verified via attestation)
+## RANKING SIGNALS
+| Signal | Weight | Notes |
+|--------|-------|-------|
+| Preference similarity | 30% | Embedding cosine; 0.5 neutral when unknown |
+| Fulfilment credit | 25% | From real credential outcomes |
+| Habit affinity | 20% | Scene + time-slot overlap; only active at ≥3 fulfilments each |
+| Window overlap | 15% | Overlapping minutes ÷ requested duration |
+| Safety | 10% | Reputation safety score minus no-show rate |
 
-Score range: 0.0–1.0 per dimension. Decays over time without activity. Anchored to Hedera HCS for tamper-proof history.
+New users are never penalised for lacking history — unknown signals resolve to neutral.
+
+## SAFETY PREFERENCES (R10)
+| Preference | Behaviour |
+|-----------|----------|
+| gender_preference=same_only | Hard filter. Requires a declared gender. |
+| require_verified | Hard filter on phone/ID/full verification tiers |
+| min_reputation_score | Hard filter on composite reputation |
+
+All three are enforced in both directions: if the candidate requires same-gender and you are not, they are excluded from your results too.
+
+## COMMITMENT DEPOSIT
+A fixed MON deposit escrowed in MonadMateEscrow, vault-keyed per (staker, room_id). It is a promise about your own attendance — MonadMate does not offer betting on whether someone else shows up. Deposits return automatically on mutual check-in. A one-sided check-in marks the meetup for review rather than instantly convicting anyone.
+
+## SOULBOUND FULFILMENT CREDENTIALS
+Contract: MonadMateFulfilmentSBT
+- Every transfer and approval entrypoint reverts; there is no code path that moves a credential
+- On-chain metadata: venue category, scene, timestamp, duration, outcome
+- No counterparty identity is ever recorded
+- correctOutcome() lets arbitration amend a verdict, with prior values preserved in events — an uncorrectable wrong record would be worse than no record
+
+## FOLLOW-THROUGH CREDIT
+Formula: 50 + kept×8 − no_show×15 − disputed×3, clamped to 0–100.
+Hidden until the holder has 5 fulfilments; before that the API returns counts and states the score is unavailable.
+Every response carries: credit describes past meetup follow-through only and is not a personal-safety guarantee.
+No public leaderboard or comparative ranking is exposed.
+
+## MANAGED WALLETS
+- Derivation: HMAC-SHA256(SECRET_KEY, "monadmate/managed-wallet/v1:" + subject)
+- Custodial: the operator can sign for these accounts. Every wallet response includes a custody_disclosure field saying so.
+- Keys are never persisted and never returned
+- Login codes are single-use, 5-minute TTL, and only returned in the HTTP response in development/test/local environments
+- Rotating SECRET_KEY rotates every managed address — treat it as a data migration
+- Exit path: POST /v1/wallet/link-external requires a valid EIP-191 signature from the external address
 
 ## AI MATCHMAKING PIPELINE
-1. User preference embedding: POST /zerodb/embed (BAAI/bge-base-en-v1.5, 768 dims) via AINative API
-2. Preference stored in ZeroDB vector store
-3. Match request triggers cosine similarity search across compatible users
-4. Intro message generated by claude-sonnet-4-5 via AINative LLM gateway
-5. Moderation: llama-3.3-8b-instruct filters harmful content before delivery
+1. Preference embedding: POST /zerodb/embed (BAAI/bge-base-en-v1.5, 768 dims) via AINative API; falls back to a 45-term pure-Python bag-of-words vector when unconfigured
+2. Preferences stored in ZeroDB vector store
+3. Candidates filtered by hard constraints, then ranked by the five signals above
+4. Reasons attached to each candidate so the ranking is explainable
+5. Moderation filters harmful content before message delivery
 
 ## API REFERENCE
 
-### Authentication
-POST /api/v1/auth/wallet/connect
-Step 1 — Get challenge:
+### Managed wallet login
+POST /v1/wallet/login/code
+  Body: { "email": "string" } or { "phone": "string" }
+  Response: { "subject": "string", "expires_at": "iso8601", "delivery": "string", "code": "string|null" }
+POST /v1/wallet/login/verify
+  Body: { "code": "string", "email": "string" } or { "code": "string", "phone": "string" }
+  Response: { "access_token": "string", "token_type": "bearer", "user": {...} }
+GET /v1/wallet/me
+  Response: { "wallet_address": "string", "wallet_kind": "managed|external", "managed": bool, "gas_sponsored": bool, "custody_disclosure": "string" }
+POST /v1/wallet/link-external
+  Body: { "wallet_address": "string", "signature": "string", "nonce": "string" }
+
+### Wallet signature login
+POST /v1/users/challenge
   Body: { "wallet_address": "string" }
-  Response: { "challenge": "string", "expires_at": "iso8601" }
-Step 2 — Verify signature:
-  Body: { "wallet_address": "string", "signature": "string", "challenge": "string" }
-  Response: { "access_token": "string", "token_type": "bearer" }
+  Response: { "nonce": "string", "expires_at": "iso8601" }
+POST /v1/users/onboard
+  Body: { "wallet_address": "string", "signature": "string", "nonce": "string" }
+  Response: { "access_token": "string", "token_type": "bearer", "user": {...} }
+PATCH /v1/users/me
+  Body: { "gender": "female|male|other|undisclosed", "birth_year": int, "email": "string", "privacy_mode": "string" }
 
-### Rooms
-GET /api/v1/rooms
-  Query: limit (default 20), offset (default 0), category (optional)
-  Response: { "items": [...], "total": int }
+### Meetup requests
+POST /v1/meetups/requests
+  Body: { "venue_type": "mall|supermarket", "venue_name": "string", "venue_key": "string",
+          "scene": "dining|entertainment|shopping", "party_size": int, "duration_minutes": int,
+          "window_start": "iso8601 (optional)", "note": "string (optional)",
+          "gender_preference": "any|same_only", "require_verified": bool,
+          "min_reputation_score": float (optional) }
+  Response: full request object with derived window_start/window_end
+GET /v1/meetups/requests
+GET /v1/meetups/requests/{id}
+POST /v1/meetups/requests/{id}/cancel
+GET /v1/meetups/requests/{id}/candidates
+  Query: limit (default 10, max 50)
+  Response: [ { "counterpart_request_id": "uuid", "counterpart_user_id": "uuid", "score": float,
+                "reasons": [...], "breakdown": {...}, "credit_score": float|null,
+                "fulfilled_count": int, "verified": bool } ]
+POST /v1/meetups/requests/{id}/propose/{counterpart_request_id}
+GET /v1/meetups/requests/{id}/matches
+POST /v1/meetups/matches/{id}/respond
+  Body: { "accept": bool }
 
-### Stakes
-POST /api/v1/stakes
-  Body: { "stake_type": "dm|room|meetup", "target_id": "uuid", "amount_mon": float }
-  Response: { "id": "uuid", "tx_hash": "string", "status": "pending|confirmed" }
-
-### Matches
-POST /api/v1/matches
-  Body: { "target_user_id": "uuid" }
-  Response: { "id": "uuid", "status": "pending|matched|rejected", "intro_message": "string" }
-
-### Messages
-POST /api/v1/messages
-  Body: { "match_id": "uuid", "content": "string" }
-  Response: { "id": "uuid", "created_at": "iso8601" }
+### Deposits
+POST /v1/stakes
+  Body: { "stake_type": "string", "amount_mon": float, "tx_hash": "string (optional)" }
 
 ### Attestations
-POST /api/v1/attestations
-  Body: { "meetup_id": "uuid", "gps_lat": float, "gps_lng": float, "confirmed": bool }
-  Response: { "id": "uuid", "status": "pending|approved|rejected" }
+POST /v1/attestations/meetup/initiate
+  Body: { "match_id": "uuid", "method": "gps_checkin|qr_code|ble_proximity|mutual_confirmation" }
+POST /v1/attestations/meetup/{id}/confirm
+  Body: { "token": "string (optional)", "latitude": float, "longitude": float }
 
-### Transfers
-POST /api/v1/transfers
-  Body: { "recipient_wallet": "string", "amount_mon": float, "message": "string (optional)" }
-  Response: { "id": "uuid", "status": "pending", "tx_hash": null }
-
-### Moment NFTs
-POST /api/v1/nfts/mint-moment
-  Body: { "attestation_id": "uuid", "name": "string", "description": "string (optional)" }
-  Response: { "id": "uuid", "status": "pending", "mint_address": null }
-GET /api/v1/nfts/moments
-  Query: limit (default 20, max 100), offset (default 0)
+### Credentials
+GET /v1/credentials/me
   Response: { "items": [...], "total": int }
+GET /v1/credentials/me/credit
+  Response: { "fulfilled_count": int, "no_show_count": int, "disputed_count": int,
+              "score_available": bool, "credit_score": float|null, "breakdown": {...},
+              "required_fulfilments": int, "disclaimer": "string" }
+POST /v1/credentials
+  Body: { "attestation_id": "uuid", "outcome": "kept|no_show|disputed" }
+
+### Safety
+POST /v1/safety/report
+  Body: { "reported_user_id": "uuid", "report_type": "string", "description": "string" }
+POST /v1/safety/block
+  Body: { "blocked_user_id": "uuid" }
+
+## CONTRACTS
+- MonadMateEscrow — commitment deposit escrow, native MON, vault per (staker, room_id)
+- MonadMateEventLog — append-only decision record producing explorer-visible transactions
+- MonadMateFulfilmentSBT — soulbound fulfilment credential
+Chain id: 10143 (testnet). Explorer: https://testnet.monadexplorer.com
+Not yet deployed — deploy with contracts/scripts/deploy_testnet.sh
 
 ## OPEN SOURCE PACKAGES
 
 ### monadmate-stake-sdk (Python)
 pip install monadmate-stake-sdk
-- StakeGate: enforce stake requirements on any action
-- StakeRecord: track stake history and outcomes
-- SlashingPolicy: configurable slash percentages, escalating no-show multiplier
-- SlashReason enum: NO_SHOW, HARASSMENT, FAKE_PROFILE, CONSENT_VIOLATION, SPAM, PAYMENT_FRAUD
+- StakeGate: enforce deposit requirements on any action
+- StakeRecord: track deposit history and outcomes
+- SlashingPolicy: configurable slash percentages
 
 ### monadmate-reputation (Python)
 pip install monadmate-reputation
 - ReputationEngine: 5-dimension score calculation with decay
-- Hedera HCS anchoring for tamper-proof reputation history
-- Decay: scores decay toward 0.5 without activity
+- Hedera HCS anchoring for tamper-proof history
 
 ### monadmate-x402 (Python)
 pip install monadmate-x402
 - FastAPI middleware for Coinbase x402 HTTP-native USDC payments on Base
-- Drop-in decorator: @require_payment(amount=0.01, currency="USDC")
 
-## WALLET SUPPORT
+## SIGN-IN SUPPORT
+- Email or phone code (managed custodial account)
 - MetaMask (https://metamask.io)
 - Rabby (https://rabby.io)
 - WalletConnect (iOS + Android)
 
-## COINBASE x402
-- Network: Base mainnet
-- Currency: USDC
-- Feature flag: NEXT_PUBLIC_X402_ENABLED
-- Flow: HTTP 402 response → wallet signs payment → retry with payment header
+## KNOWN LIMITS
+- Contracts are written and tested but not yet deployed; no addresses are published
+- The managed-wallet login code store is in-memory and assumes a single API process
+- Credit and credentials describe attendance history only; they are not safety guarantees
+- Arbitration for disputed check-ins is a minimum viable flow, not a complete adjudication system
 
 ## SECURITY
 Contact: HankGrimm91@gmail.com

@@ -1,58 +1,58 @@
 const FEATURES = [
   {
-    icon: "⚡",
-    title: "Stake-to-Interact",
-    desc: "MON escrow gates every meaningful action — room entry, match requests, DM unlocks. The escrow contract holds funds on-chain. Auto-slash runs hourly via Celery.",
-    tags: ["Monad Escrow", "Native MON", "Celery"],
+    icon: "📍",
+    title: "Same Venue, Same Hour",
+    desc: "Requests are anchored to a specific mall or supermarket and a time window. Candidates must share the venue, the window, and the intent — no cross-city feed padding, and an empty result stays empty.",
+    tags: ["Venue-Scoped", "Time Window", "Scene Match"],
     color: "violet",
   },
   {
     icon: "🤖",
     title: "AI Match Agent",
-    desc: "Bag-of-words preference embeddings (45-term vocab, L2-normalised), 5-dimension scoring, vibe filtering, and personalized AI-generated intros via Claude.",
-    tags: ["Vector Similarity", "Claude AI", "ZeroDB"],
+    desc: "Preference embeddings plus follow-through history, habit overlap, window fit, and safety signals. Every candidate ships with the reasons it surfaced, so the ranking is explainable.",
+    tags: ["Vector Similarity", "Explainable", "Habit Affinity"],
     color: "purple",
   },
   {
-    icon: "📍",
-    title: "GPS Meetup Attestation",
-    desc: "Haversine proximity check (100m threshold). BLE token + QR code fallbacks. Both parties sign. Confirmed → stake refunded + Hedera HCS anchor.",
-    tags: ["Hedera HCS", "GPS", "BLE/QR"],
+    icon: "📱",
+    title: "No Seed Phrase Needed",
+    desc: "Email or phone login provisions a managed account — no key management, no gas prompts. Link an external wallet later to take full self-custody whenever you want.",
+    tags: ["Managed Wallet", "Gas Sponsored", "Self-Custody Path"],
     color: "pink",
   },
   {
-    icon: "💳",
-    title: "Coinbase x402 Payments",
-    desc: "HTTP 402 payment protocol for DM unlocks. Base USDC (0.5 USDC per DM). Facilitator-verified proof-of-payment. Graceful degradation when disabled.",
-    tags: ["x402 Protocol", "Base USDC", "Coinbase"],
+    icon: "💰",
+    title: "Commitment Deposit",
+    desc: "A fixed MON deposit held in the escrow contract, returned once both sides check in. It binds your own attendance — betting on someone else's behaviour is explicitly out of scope.",
+    tags: ["Monad Escrow", "Native MON", "Auto-Refund"],
     color: "coral",
   },
   {
     icon: "🛡️",
-    title: "Safety Engine",
-    desc: "6 report categories, auto-deactivation for underage reports, repeat-offender detection (3+ reports), moderation queue with severity scoring.",
-    tags: ["Moderation", "Report System", "Auto-Actions"],
+    title: "Safety Preferences",
+    desc: "Same-gender-only, verified-only, and minimum-reputation filters are hard constraints applied in both directions — a candidate failing them is never shown, not merely ranked lower.",
+    tags: ["Hard Filters", "Bidirectional", "Verification Gate"],
     color: "violet",
   },
   {
-    icon: "📊",
-    title: "Reputation Engine",
-    desc: "5-dimension composite score: reliability, safety, response rate, meetup completion, consent. Time-based decay (−1pt/week). Event-driven updates.",
-    tags: ["Decay Algorithm", "Trust Score", "Portable"],
+    icon: "🎖️",
+    title: "Soulbound Credentials",
+    desc: "Each completed meetup mints a non-transferable credential holding the venue category, scene, time, and outcome. No counterparty identity is ever written on-chain.",
+    tags: ["Soulbound", "Privacy-Safe", "Correctable"],
     color: "purple",
   },
   {
-    icon: "🎭",
-    title: "Multi-Persona System",
-    desc: "Create multiple personas per wallet — anonymous or named. Room-scoped personas with visibility controls. Intent modes: social, dating, networking, friendship.",
-    tags: ["Privacy Modes", "Persona Scoping", "Intent Modes"],
+    icon: "📊",
+    title: "Follow-Through Credit",
+    desc: "Credit is built from real attendance records and stays hidden until enough history exists. It describes past follow-through only — never a personal-safety guarantee.",
+    tags: ["History-Based", "No Leaderboard", "Disclosed Limits"],
     color: "pink",
   },
   {
-    icon: "🔗",
-    title: "Immutable Audit Trail",
-    desc: "Every safety decision anchored on Hedera Hashgraph Consensus Service. Tamper-proof log of attestations, slashings, and report resolutions.",
-    tags: ["Hedera HCS", "DLT", "Compliance"],
+    icon: "🚨",
+    title: "Reports & Arbitration",
+    desc: "Six report categories, repeat-offender detection, and bidirectional blocks. A one-sided claim never auto-convicts — unmatched check-ins go to review instead of an instant penalty.",
+    tags: ["Moderation", "Review Queue", "Bidirectional Block"],
     color: "coral",
   },
 ];
@@ -73,12 +73,12 @@ export default function Features() {
             Features
           </div>
           <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-            Everything you'd expect.{" "}
-            <span className="text-gradient">Nothing you've seen before.</span>
+            Built for the hour{" "}
+            <span className="text-gradient">you're actually free.</span>
           </h2>
           <p className="mt-4 text-white/50 max-w-xl mx-auto text-lg">
-            Built on Monad, Hedera, Base, and Coinbase. Every feature has
-            on-chain accountability baked in from day one.
+            Every feature exists to close one gap: matching strangers who are in
+            the same place right now, and making sure they both show up.
           </p>
         </div>
 

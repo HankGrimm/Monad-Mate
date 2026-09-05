@@ -12,22 +12,22 @@ export default function Download() {
           Get Monad Mate
         </div>
         <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-6">
-          Ready to connect{" "}
-          <span className="text-gradient">with skin in the game?</span>
+          Ready to find someone{" "}
+          <span className="text-gradient">for the next hour?</span>
         </h2>
         <p className="text-white/50 text-lg max-w-xl mx-auto mb-12">
-          Monad Mate is a Web3 dApp — no app store required. Open in any browser
-          or install it to your home screen.
+          Monad Mate runs in the browser — no app store required. Sign in with
+          your email or connect a wallet, whichever you prefer.
         </p>
 
         <div className="grid sm:grid-cols-3 gap-6 mb-12">
           {/* Option 1: Web dApp */}
           <div className="p-6 rounded-2xl border-gradient bg-brand-card flex flex-col items-center gap-4 hover:glow-violet transition-all">
             <div className="text-4xl">🌐</div>
-            <h3 className="font-bold text-lg">Web dApp</h3>
+            <h3 className="font-bold text-lg">Web App</h3>
             <p className="text-white/50 text-sm text-center">
-              Open in any browser. Connect MetaMask or Rabby. No install
-              needed.
+              Open in any browser. Email login, or connect MetaMask or Rabby. No
+              install needed.
             </p>
             <a
               href={API_URL + "/docs"}
@@ -76,15 +76,15 @@ export default function Download() {
         {/* Wallet compatibility */}
         <div className="p-6 rounded-2xl bg-brand-card/50 border border-brand-border inline-block">
           <div className="text-sm text-white/50 mb-3">
-            Supported wallets & networks
+            Sign-in options & networks
           </div>
           <div className="flex flex-wrap justify-center gap-4 text-sm">
             {[
+              "📧 Email / Phone",
               "🟣 MetaMask",
               "🔵 Rabby",
               "⚡ Monad Testnet",
-              "🔵 Base Mainnet",
-              "🌐 Any Web3 Browser",
+              "🌐 Any Mobile Browser",
             ].map((w) => (
               <span key={w} className="text-white/70">
                 {w}

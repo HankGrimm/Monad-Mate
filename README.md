@@ -1,122 +1,88 @@
-# Monad Mate — Trust-Based Social App on Monad
+# Monad Mate — Instant Offline Companions on Monad
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-324%20passing-brightgreen)](backend/tests/)
-[![Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen)](backend/)
+[![Tests](https://img.shields.io/badge/tests-451%20passing-brightgreen)](backend/tests/)
 [![Deployed](https://img.shields.io/badge/API-live%20on%20Railway-blue)](https://monad-mate-trust-api-production.up.railway.app/health)
 
-> **Submission description (≤300 chars):** Monad Mate — stake MON to DM, match, and meet. No-shows and harassment get slashed on Monad. AI matchmaking, GPS attestation, HCS audit trail, and Coinbase x402 payments. Skin in the game replaces swipe culture.
+> **Submission description (≤300 chars):** Monad Mate — post what you want to do in the next hour, match with someone in the same mall, and a small MON deposit keeps you both honest. AI matching, GPS check-in, soulbound fulfilment credentials on Monad.
 
-**Monad Mate is a stake-to-interact social app where skin-in-the-game replaces swipe culture.**
+**Monad Mate matches people who are in the same mall or supermarket right now and want to do the same thing in the next hour.**
 
-Users stake MON to enter rooms, request matches, and unlock DMs. Genuine meetups release the stake back. No-shows and harassment get slashed. An AI match agent surfaces compatible people. Every safety decision is anchored on Hedera HCS for immutable auditability.
-
+You post an intent — a meal, an arcade round, a shopping run — scoped to the venue you're standing in and the time you have free. An AI agent ranks people who share that venue, that window, and that intent, and explains why each one surfaced. Both sides confirm, both put up a small MON deposit as a commitment to their own attendance, and a GPS or QR check-in returns the deposits and mints a soulbound credential recording that you kept your word.
 
 ---
 
 ## The Problem
 
-Dating and social apps have zero cost for bad behavior — ghosting, harassment, and fake profiles are free. Reputation scores are siloed and forgettable. There's no skin in the game.
+You're alone in a mall on a Saturday and want company for the next hour. Existing social apps match you with someone across the city for some unspecified future date. By the time a chat warms up, the moment is gone — and when plans do form, there's no cost to ghosting.
 
 ## The Solution
 
-Monad Mate introduces **economic accountability** into social interactions:
+Three constraints that most social apps don't impose:
 
-- **Stake to interact** — put up MON to enter a room or DM someone. It comes back if you show up.
-- **Slash bad actors** — no-shows lose 50%, harassment loses 100% of their stake.
-- **AI matchmaking** — vector-based compatibility scoring finds real chemistry, not just swipes.
-- **Meetup attestation** — both parties confirm the meeting via GPS or QR code, triggering stake release and reputation boost.
-- **Immutable audit trail** — every safety action is anchored on Hedera HCS.
+- **Same venue, same hour** — candidates must share the building and an overlapping time window. Nothing else qualifies.
+- **A commitment deposit** — both sides escrow MON as a promise about their *own* attendance. Not a bet on the other person.
+- **A record that survives** — a soulbound credential logs venue category, scene, and outcome. It never records who you met.
 
 ---
 
 ## Features
 
-### Wallet Identity
-- Monad EIP-191 wallet auth — challenge/nonce → signature verification (supports MetaMask, Rabby)
-- JWT session tokens
-- Verification levels: wallet → phone → ID → full KYC
-- Privacy modes: public / semi-private / private
+### Onboarding — Two Paths
+- **Managed accounts** — email or phone login provisions an account with no seed phrase and no gas prompts (`/v1/wallet/login/code`). Custodial by design; the disclosure ships in every response.
+- **Self-custody** — EIP-191 wallet signature login (MetaMask, Rabby) as before. Managed users can link an external wallet to graduate.
+- Verification tiers: wallet → phone → ID → full KYC. Verification is required before creating or accepting a meetup.
 
-### Personas
-- Multiple personas per wallet (anonymous or named)
-- Intent modes: `social`, `dating`, `networking`, `friendship`
-- Room-scoped — persona is attached to a specific room
+### Meetup Requests (R1)
+- Venue types: `mall`, `supermarket`; scenes: `dining`, `entertainment`, `shopping`
+- Anchored to a stable `venue_key` (POI id) — same key means same building, which beats a GPS radius indoors
+- Explicit time window derived from a duration (15–240 min)
+- One active request per user; windows auto-expire
 
-### Rooms
-- Types: `lounge`, `topic`, `event`, `private`
-- Stake-gated entry: rooms can require MON stake to join
-- Location-aware: GPS coordinates + haversine distance discovery
-- Intent-mode filtering: only see rooms that match your vibe
+### AI Match Agent (R2 / R11)
+Ranking weights:
 
-### Stake-to-Interact
-- Stake MON on-chain (Monad Solidity contract) to enter a room or initiate a match
-- Escrow held in a contract-held vault keyed by `(staker, room_id)`
-- Three stake types: `room_entry`, `match_request`, `dm_unlock`
-- Auto-slash: Celery worker evaluates no-shows hourly
+| Signal | Weight |
+|--------|-------|
+| Preference similarity (embeddings) | 30% |
+| Fulfilment credit | 25% |
+| Scene & time-slot habit overlap | 20% |
+| Time-window overlap | 15% |
+| Safety signal | 10% |
 
-### Safety Escrow (Slashing Policy)
-| Violation | Slash % |
-|-----------|---------|
-| No-show (1st) | 50% |
-| No-show (repeat) | 100% |
-| Harassment confirmed | 100% |
-| False report filed | 25% (reporter slashed) |
+- Hard constraints first: same venue, same scene, overlapping window, not blocked (bidirectional), safety preferences satisfied **in both directions**
+- Habit overlap (R11) only activates once both sides have ≥3 fulfilments — new users are never penalised for having no history
+- Every candidate ships with human-readable `reasons`; an empty venue returns an empty list rather than padded suggestions
 
-- Repeat no-shows (3+) → DM sending suspended
-- Stake multiplier: each no-show increases required stake by 0.5×, max 3×
+### Safety Preferences (R10)
+`same_gender_only`, `require_verified`, and `min_reputation_score` are **hard filters, not soft ranking signals** — a candidate failing any of them is never shown. Preferences apply in both directions: if the candidate requires same-gender and you aren't, they're excluded from *your* results too.
 
-### AI Match Agent (Powered by AINative Studio)
+### Commitment Deposit
+- Fixed MON deposit into `MonadMateEscrow`, vault-keyed per `(staker, room_id)`
+- Returned automatically once both sides check in
+- A one-sided check-in marks the meetup for review rather than instantly convicting anyone
 
-Monad Mate uses [AINative Studio's](https://ainative.studio) hosted LLM and vector API — no separate OpenAI or Anthropic accounts needed. The `AINATIVE_API_KEY` env var unlocks real AI; everything gracefully falls back to pure-Python when unset.
+### Meetup Attestation
+- Both parties submit GPS; proximity verified within 100m (haversine)
+- Alternatives: BLE token (2-min TTL) or QR code (5-min TTL)
+- Confirmed attestation → deposit released, reputation updated, Hedera HCS anchor, credential minted
 
-| Capability | AINative Endpoint | Fallback |
-|-----------|------------------|---------|
-| 768-dim preference embeddings | `POST /zerodb/embed` (BAAI/bge, 16ms) | Bag-of-words (45-term vocab, L2-norm) |
-| Semantic profile search | `POST /zerodb/vectors/search` | In-memory cosine similarity |
-| Personalized match intros | Chat completions (`claude-sonnet-4-5`) | Template string |
-| Message moderation | Chat completions (`llama-3.3-8b-instruct`) | Always `{"safe": true}` |
+### Soulbound Fulfilment Credentials (R8)
+- `MonadMateFulfilmentSBT` — every transfer, approval, and `setApprovalForAll` path reverts
+- On-chain metadata: venue category, scene, timestamp, duration, outcome. **No counterparty identity, ever.**
+- `correctOutcome` exists deliberately: an immutable wrong verdict is worse than no record, so arbitration can amend an outcome with the history preserved in events
 
-- **5-dimension compatibility scoring:**
-
-| Dimension | Weight |
-|-----------|--------|
-| Preference similarity | 35% |
-| Intent mode match | 20% |
-| Reputation trust score | 20% |
-| Room context match | 15% |
-| Behavioral safety score | 10% |
-
-- **Vibe filter** — exclude reported users, filter by intent mode
-- **AI intro generator** — LLM-generated personalized opening message based on shared interests and intent mode
-- **Content moderation** — every outgoing DM scored before delivery; flagged messages blocked pre-send
-
-### Meetup Attestations
-- Both parties submit GPS coordinates after meeting
-- Proximity verified within 100m (haversine)
-- Alternative: BLE token (2-min TTL) or QR code (5-min TTL)
-- Confirmed attestation → stake refunded + reputation boosted
-- Anchored on Hedera HCS for immutable proof
-
-### Reputation Engine
-- 5 dimensions: reliability, safety, response rate, meetup completion, consent confirmation
-- Composite score with weighted formula
-- Time-based decay: −1 pt/week per dimension for inactivity
-- Event-driven updates: meetup completed (+5), no-show (−15), report received (−10), stake slashed (−20)
+### Follow-Through Credit (R9)
+- Built from real credential outcomes: `50 + kept×8 − no_show×15 − disputed×3`, clamped to 0–100
+- **Hidden until 5 fulfilments exist** — no meaningless default score
+- Every response carries the caveat that credit describes past follow-through and is *not* a personal-safety guarantee
+- No public leaderboard or comparative ranking
 
 ### Safety & Moderation
 - Report categories: harassment, fake profile, underage, spam, no-show, scam
-- Auto-actions: underage reports → immediate account deactivation
-- Repeat offender detection (3+ reports)
-- Bidirectional block system
-- Moderation queue with severity levels
-- All resolved reports update the offender's reputation
-
-### Matching & Messaging
-- Consent-gated: both parties must accept before messages flow
-- Stake-gated: DM channel requires active stake
-- Match states: `pending` → `accepted` → `active` → `completed` / `expired`
-- Interaction policy enforcement: block checks, persona-in-room checks
+- Underage reports → immediate deactivation; 3+ reports → repeat-offender handling
+- Bidirectional blocks enforced at discovery, matching, and messaging
+- All resolved reports feed the offender's reputation
 
 ---
 
@@ -124,19 +90,29 @@ Monad Mate uses [AINative Studio's](https://ainative.studio) hosted LLM and vect
 
 ```
 backend/app/
-  api/          ← FastAPI route handlers (rooms, matches, stakes, safety, reputation…)
-  models/       ← SQLAlchemy ORM (User, Persona, Room, Stake, Match, Message, Attestation…)
+  api/          ← FastAPI routes (meetups, credentials, wallet, rooms, stakes, safety…)
+  models/       ← SQLAlchemy ORM (User, MeetupRequest, FulfilmentCredential, CreditProfile…)
   schemas/      ← Pydantic v2 request/response schemas
-  services/     ← Business logic (27 service classes)
+  services/     ← Business logic (30 service classes)
   core/         ← Config, JWT auth, DB pool, domain errors
-  tasks/        ← Celery workers (escrow auto-slash, match expiry, reputation decay)
+  tasks/        ← Celery workers (deposit review, match expiry, reputation decay)
 
 contracts/
-  src/MonadMateEscrow.sol     ← Escrow contract (stake/refund/slash)
-  src/MonadMateEventLog.sol   ← On-chain stake/refund/slash record log
-  test/                       ← Foundry (Solidity) tests
-  scripts/deploy_testnet.sh   ← One-command Monad testnet deploy
+  src/MonadMateEscrow.sol         ← Commitment deposit escrow (stake/refund/slash)
+  src/MonadMateEventLog.sol       ← On-chain decision record log
+  src/MonadMateFulfilmentSBT.sol  ← Soulbound fulfilment credential
+  test/                           ← Foundry (Solidity) tests
+  scripts/deploy_testnet.sh       ← One-command Monad testnet deploy
 ```
+
+### Key Flow
+
+```
+Post intent → AI ranks same-venue candidates → both confirm → deposit escrowed
+  → meet offline → GPS/QR check-in → deposit returned → soulbound credential minted
+```
+
+
 
 **Infrastructure primitives** (via Agent-402):
 - **Monad escrow** — on-chain stake funding and release (native MON)
@@ -180,29 +156,72 @@ Alongside it, `MonadMateEventLog` records every stake/refund/slash decision as a
 indexed event. The API writes to it from `monad_service.py` via web3.py, so each
 call produces an explorer-visible transaction hash.
 
+### Soulbound Credential Contract
+
+`MonadMateFulfilmentSBT` is intentionally *not* a full ERC-721. It advertises the
+ERC-721 metadata interface so wallets display it, but `transferFrom`,
+`safeTransferFrom`, `approve`, and `setApprovalForAll` all revert with
+`SoulboundTransferRejected`. There is no code path that moves a credential.
+
+| Function | Authority | Effect |
+|----------|-----------|--------|
+| `mint()` | `admin` (API) | Issue one credential; idempotent per `attestationRef` |
+| `correctOutcome()` | `admin` (API) | Amend an outcome after arbitration, emitting the prior value |
+| `keptCount()` | anyone | How many credentials the holder kept |
+
+`correctOutcome` is deliberate. A soulbound record that cannot be corrected turns
+an arbitration mistake into a permanent one, so the contract keeps the amendment
+path and preserves history in events rather than in stale storage.
+
+### Ranking Signals
+
+Candidate ranking combines five signals (see `meetup_request_service.py`):
+
+| Signal | Weight | Source |
+|--------|-------|--------|
+| Preference similarity | 30% | Embedding cosine; 0.5 neutral for new users |
+| Fulfilment credit | 25% | `CreditProfile.credit_score` |
+| Habit affinity | 20% | Scene + time-slot frequency overlap, gated at ≥3 fulfilments each |
+| Window overlap | 15% | Overlapping minutes ÷ requested duration |
+| Safety | 10% | Reputation safety score minus no-show rate |
+
+Hard constraints are applied before ranking and are never traded off against
+score: same `venue_key`, same scene, overlapping window, both requests open,
+neither party blocked (checked in both directions), and both sides' R10
+preferences satisfied.
+
 ### Preference Embedding Algorithm
 
-The AI match agent uses a pure-Python bag-of-words embedding (zero numpy dependency):
+Embeddings come from AINative's 768-dim BAAI/bge model when configured, and fall
+back to a pure-Python bag-of-words vector otherwise:
 
-1. **Vocabulary**: 45 curated terms across interest categories (tech, arts, sports, lifestyle, values)
+1. **Vocabulary**: 45 curated terms across interest categories
 2. **Encoding**: Each preference list → binary vector of length 45
 3. **Normalisation**: L2-norm (unit vector) to eliminate length bias
 4. **Similarity**: Dot product of two unit vectors = cosine similarity
-5. **Score range**: 0.0–1.0, where 1.0 = identical preferences
 
-This runs in microseconds with no external dependencies and no model download required. See `services/preference_memory_service.py`.
+The fallback runs in microseconds with no external dependency and no model
+download. See `services/preference_memory_service.py`.
 
-### Persona Visibility Scopes
+### Managed Wallet Derivation
 
-Each persona has a `visibility` field controlling discoverability:
+Managed accounts derive their signing key as
+`HMAC-SHA256(SECRET_KEY, "monadmate/managed-wallet/v1:" + subject)`, where
+subject is `email:<addr>` or `phone:<number>`.
 
-| Scope | Discoverability | Use Case |
-|-------|----------------|----------|
-| `public` | Visible in room lists and match recommendations globally | Default for networking/social |
-| `semi_private` | Visible only within the room they're attached to | Default for dating |
-| `private` | Never appears in recommendations; only direct-link access | High-privacy mode |
+Consequences worth knowing before deploying:
 
-Persona visibility is enforced at the query layer in `room_discovery_service.py` and `matchmaking_service.py`.
+- **Custodial.** The operator can sign for these accounts. Every wallet response
+  includes a `custody_disclosure` field stating this.
+- **Keys are never persisted or returned.** They are derived on demand and dropped.
+- **Rotating `SECRET_KEY` rotates every managed address**, so a rotation is a data
+  migration, not a config change.
+- **Login codes are single-use with a 5-minute TTL** and only appear in the HTTP
+  response when `ENVIRONMENT` is development/test/local.
+- The in-memory code store assumes one API process; use Redis before scaling out.
+
+Users can leave custody at any time via `POST /v1/wallet/link-external`, which
+requires a valid EIP-191 signature from the external address.
 
 ### Block System
 
@@ -210,6 +229,7 @@ Persona visibility is enforced at the query layer in `room_discovery_service.py`
 
 - **Room discovery**: blocked users never appear in room listings
 - **Match requests**: blocked users cannot initiate or receive match requests
+- **Meetup candidates**: blocks filter in both directions — blocking someone also hides you from them
 - **Messaging**: messages from blocked users are rejected at the API layer
 - **Match agent**: vibe filter excludes blocked users from all recommendations
 
@@ -274,9 +294,9 @@ python3 scripts/demo_seed.py --base-url http://localhost:8000
 
 ## Monad Contracts — Not Yet Deployed
 
-The escrow and event-log contracts live in `contracts/` and are ready to deploy to
-Monad testnet (chain id `10143`). No address is published yet — deploy them and copy
-the printed addresses into `.env`:
+The escrow, event-log, and credential contracts live in `contracts/` and are ready
+to deploy to Monad testnet (chain id `10143`). No address is published yet —
+deploy them and copy the printed addresses into `.env`:
 
 ```bash
 cd contracts
@@ -312,15 +332,15 @@ Everything below was designed and built from scratch for this project:
 
 | Component | Location | What's unique |
 |-----------|---------|--------------|
-| **Stake-to-interact protocol** | `backend/app/services/stake_service.py` | 5 stake types, no-show multiplier (0.5× per offense, 3× cap), automated Celery slash evaluation |
-| **Solidity escrow contract** | `contracts/src/MonadMateEscrow.sol` | mapping-keyed vault per `(staker, room_id)`, slash splits to safety fund |
-| **5-dimension reputation engine** | `backend/app/services/social_reputation_service.py` | Weighted composite (reliability 30%, safety 30%, response 15%, meetup 15%, consent 10%), event-driven updates |
-| **Proximity attestation** | `backend/app/services/attestation_service.py` | GPS haversine (100m threshold) + BLE token + QR fallback; both parties must confirm |
-| **Intent-mode room scoping** | `backend/app/services/room_discovery_service.py` | Rooms and personas scope-matched by intent (social / dating / networking / friendship) |
-| **Persona system** | `backend/app/models/persona.py` | Multiple personas per wallet, visibility scopes (public / semi-private / private), room-scoped personas |
-| **Consent-gated messaging** | `backend/app/services/match_service.py` + `message_service.py` | Both parties must accept before any messages flow; stake must be active |
-| **AI matchmaking service** | `backend/app/services/ainative_service.py` | AINative gateway integration with graceful bag-of-words fallback; ZeroDB vector sync |
-| **Repeat-offender detection** | `backend/app/services/safety_service.py` | 3+ reports → automatic suspension, stake multiplier escalation, HCS anchor |
+| **Same-venue meetup matching** | `backend/app/services/meetup_request_service.py` | Venue-key + time-window + scene hard constraints, 5-signal ranking, explainable reasons, empty-when-nothing-qualifies |
+| **Bidirectional safety filters** | `backend/app/services/meetup_request_service.py` | Same-gender / verified-only / min-reputation applied as hard filters in both directions, never as soft ranking |
+| **Soulbound credential contract** | `contracts/src/MonadMateFulfilmentSBT.sol` | All transfer paths revert; metadata carries no counterparty; `correctOutcome` keeps arbitration mistakes fixable |
+| **Managed wallet onboarding** | `backend/app/services/managed_wallet_service.py` | Deterministic HMAC key derivation, keys never persisted, single-use login codes, disclosed custody, self-custody exit path |
+| **Fulfilment credit** | `backend/app/services/fulfilment_credential_service.py` | Score gated behind 5 fulfilments, habit maps feed matching, safety caveat on every response |
+| **Commitment deposit escrow** | `contracts/src/MonadMateEscrow.sol` | mapping-keyed vault per `(staker, room_id)`, slash splits to safety fund |
+| **Proximity attestation** | `backend/app/services/meetup_attestation_service.py` | GPS haversine (100m threshold) + BLE token + QR fallback; both parties must confirm |
+| **5-dimension reputation engine** | `backend/app/services/social_reputation_service.py` | Weighted composite, event-driven updates, time decay |
+| **Repeat-offender detection** | `backend/app/services/safety_service.py` | 3+ reports → automatic suspension, HCS anchor |
 
 ---
 
@@ -356,23 +376,29 @@ cd backend
 pytest tests/ -v --cov=app --cov-report=term-missing
 ```
 
-**324 tests, 94% coverage.**
+**451 tests passing.**
 
-| Area | Tests | Coverage |
-|------|-------|----------|
-| Models & Schemas | — | 100% |
-| User / Wallet Auth | 25 | 81% |
-| Rooms | 9 | 97% |
-| Stakes & Escrow | 19 | 93% |
-| Matching & Messaging | 15 | 85% |
-| Attestations & Reputation | 10 | 85% |
-| AI Match Agent | 8 | 91% |
-| Safety & Moderation | 23 | 100% |
-| Proximity Verification | 16 | 100% |
-| Room Discovery | 14 | 97% |
-| Preference Memory | 16 | 97% |
-| Reputation Decay | 14 | 100% |
-| Infra / Health | 11 | 96% |
+| Area | Tests |
+|------|-------|
+| Meetup requests (R1 / R10 / R11) | 23 |
+| Fulfilment credentials & credit (R8 / R9) | 12 |
+| Managed wallet onboarding | 14 |
+| New route HTTP layer | 18 |
+| User / Wallet Auth | 25 |
+| Safety & Moderation | 23 |
+| Stakes & Escrow | 19 |
+| Proximity Verification | 16 |
+| Preference Memory | 16 |
+| Matching & Messaging | 15 |
+| Room Discovery | 14 |
+| Reputation & Decay | 17 |
+| Rooms | 9 |
+| AI Match Agent | 8 |
+| Infra / Health | 11 |
+
+Contract tests live in `contracts/test/` and run with `forge test` (requires
+Foundry, which is not installed in this workspace — the Solidity suite has not
+been executed here).
 
 ---
 
@@ -430,12 +456,13 @@ Edit `.env` with just these two required values:
 ```env
 # Required — always
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/monadmate
+# Also derives managed wallet addresses — see "Managed Wallet Derivation" above
 SECRET_KEY=any-random-string-at-least-32-chars
 
 # Optional — app starts fine without these
 ```
 
-That's it. Wallet auth, rooms, matching, AI scoring, and all 198 tests work without any third-party keys.
+That's it. Wallet auth, managed-wallet login, meetup matching, AI scoring, credentials, and all 451 tests work without any third-party keys.
 
 ---
 
@@ -443,7 +470,7 @@ That's it. Wallet auth, rooms, matching, AI scoring, and all 198 tests work with
 
 Each integration below adds a real capability. Skip any you don't need.
 
-#### Monad (on-chain stake/escrow)
+#### Monad (on-chain deposits + credentials)
 Add Monad testnet to your wallet and fund it from the faucet: https://faucet.monad.xyz
 
 ```env
@@ -451,8 +478,11 @@ MONAD_RPC_URL=https://testnet-rpc.monad.xyz
 MONAD_CHAIN_ID=10143
 MONAD_ESCROW_ADDRESS=<from: cd contracts && bash scripts/deploy_testnet.sh>
 MONAD_EVENT_LOG_ADDRESS=<from the same deploy output>
-MONAD_PRIVATE_KEY=<backend authority key — only this key can refund/slash>
+MONAD_CREDENTIAL_SBT_ADDRESS=<from the same deploy output>
+MONAD_PRIVATE_KEY=<backend authority key — only this key can refund/slash/mint>
 ```
+
+> Without these, credentials are still recorded in Postgres but stay in `pending` mint status.
 
 #### Hedera HCS (immutable audit trail)
 Sign up at https://portal.hedera.com — testnet accounts are free.
@@ -492,12 +522,15 @@ OPENAI_API_KEY=sk-...
 # ── Required ──────────────────────────────────────────────────────────────────
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/monadmate
 SECRET_KEY=change-me-to-a-long-random-secret
+# Controls whether managed-wallet login codes are returned over HTTP
+ENVIRONMENT=development
 
 # ── Monad ────────────────────────────────────────────────────────────────────
 MONAD_RPC_URL=https://testnet-rpc.monad.xyz
 MONAD_CHAIN_ID=10143
 MONAD_ESCROW_ADDRESS=
 MONAD_EVENT_LOG_ADDRESS=
+MONAD_CREDENTIAL_SBT_ADDRESS=
 MONAD_PRIVATE_KEY=
 
 # ── Hedera HCS ────────────────────────────────────────────────────────────────
@@ -530,12 +563,14 @@ REDIS_URL=redis://localhost:6379/0
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | **Yes** | Postgres connection string |
-| `SECRET_KEY` | **Yes** | JWT signing secret (32+ chars) |
+| `SECRET_KEY` | **Yes** | JWT signing secret (32+ chars); also derives managed wallet addresses |
+| `ENVIRONMENT` | No | `development`/`test`/`local` returns managed login codes in the response; anything else withholds them |
 | `MONAD_RPC_URL` | No | Monad RPC endpoint (default: `https://testnet-rpc.monad.xyz`) |
 | `MONAD_CHAIN_ID` | No | Monad chain id (default: `10143`, testnet) |
 | `MONAD_ESCROW_ADDRESS` | No | Deployed `MonadMateEscrow` address |
 | `MONAD_EVENT_LOG_ADDRESS` | No | Deployed `MonadMateEventLog` address |
-| `MONAD_PRIVATE_KEY` | No | Backend authority key for refund/slash and event-log writes |
+| `MONAD_CREDENTIAL_SBT_ADDRESS` | No | Deployed `MonadMateFulfilmentSBT` address |
+| `MONAD_PRIVATE_KEY` | No | Backend authority key for refund/slash, event-log writes, and credential minting |
 | `HEDERA_ACCOUNT_ID` | No | Hedera operator account (e.g. `0.0.12345`) |
 | `HEDERA_PRIVATE_KEY` | No | Hedera ED25519 private key |
 | `HEDERA_TOPIC_ID` | No | HCS topic ID for audit logs |

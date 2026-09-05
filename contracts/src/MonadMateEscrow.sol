@@ -58,8 +58,8 @@ contract MonadMateEscrow {
     uint256 public totalSlashed;
     uint256 public totalRefunded;
 
-    /// @dev keccak256(staker, roomId) => vault. Mirrors the PDA keying of the
-    ///      original Solana program so backend call sites stay unchanged.
+    /// @dev keccak256(staker, roomId) => vault. Each (staker, room) pair gets
+    ///      its own vault so concurrent stakes never collide.
     mapping(bytes32 => StakeVault) private _vaults;
 
     // -----------------------------------------------------------------------

@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     MONAD_CHAIN_ID: int = 10143
     MONAD_ESCROW_ADDRESS: Optional[str] = None
     MONAD_EVENT_LOG_ADDRESS: Optional[str] = None
+    MONAD_CREDENTIAL_SBT_ADDRESS: Optional[str] = None
     MONAD_PRIVATE_KEY: Optional[str] = None
     MONAD_KEYSTORE_PATH: str = "~/.monad/backend.key"
 

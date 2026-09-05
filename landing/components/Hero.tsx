@@ -11,34 +11,30 @@ export default function Hero() {
       <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-brand-pink/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand-violet/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Hackathon badge */}
-      <div className="relative mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-violet/20 border border-brand-violet/40 text-sm text-violet-300 font-medium">
-        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-        Built for EasyA × Consensus Miami 2026
-      </div>
+
 
       {/* Headline */}
       <h1 className="relative text-5xl md:text-7xl font-black tracking-tight leading-[1.05] mb-6 max-w-4xl">
-        Social connections
+        Find someone to hang out with
         <br />
-        <span className="text-gradient">with skin in the game.</span>
+        <span className="text-gradient">in the mall you're already in.</span>
       </h1>
 
       {/* Subheadline */}
       <p className="relative text-lg md:text-xl text-white/60 max-w-2xl mb-10 leading-relaxed">
-        Stake MON to DM, match, and meet. No-shows get slashed. Genuine
-        connections earn reputation. AI matchmaking finds real chemistry — not
-        just swipes.
+        Post what you want to do in the next hour — a meal, an arcade round, a
+        shopping run. AI matches you with someone at the same venue, plans the
+        first hour, and a small MON deposit keeps you both honest.
       </p>
 
       {/* Social proof chips */}
       <div className="relative flex flex-wrap justify-center gap-3 mb-10 text-sm">
         {[
-          { icon: "⚡", label: "Monad EIP-191 Auth" },
-          { icon: "💰", label: "MON Stake Escrow" },
-          { icon: "🤖", label: "AI Match Agent" },
-          { icon: "📍", label: "GPS Attestation" },
-          { icon: "🔗", label: "Hedera HCS Audit" },
+          { icon: "📍", label: "Same-Venue Matching" },
+          { icon: "🤖", label: "AI Match + Plan" },
+          { icon: "💰", label: "MON Commitment Deposit" },
+          { icon: "🎖️", label: "Soulbound Credentials" },
+          { icon: "📱", label: "No Seed Phrase" },
         ].map((chip) => (
           <span
             key={chip.label}
@@ -78,7 +74,7 @@ export default function Hero() {
 
       {/* Mock phone mockup */}
       <div className="relative w-64 h-auto animate-float">
-        <div className="w-64 h-[500px] rounded-[40px] bg-brand-card border-2 border-brand-violet/40 shadow-2xl glow-violet overflow-hidden flex flex-col">
+        <div className="w-64 h-[540px] rounded-[40px] bg-brand-card border-2 border-brand-violet/40 shadow-2xl glow-violet overflow-hidden flex flex-col">
           {/* Phone status bar */}
           <div className="h-8 bg-brand-dark/80 flex items-center justify-between px-6 text-xs text-white/40">
             <span>9:41</span>
@@ -88,43 +84,50 @@ export default function Hero() {
           <div className="px-5 pt-4 pb-3 border-b border-brand-border">
             <div className="flex items-center gap-2">
               <span className="text-xl">💜</span>
-              <span className="font-bold text-sm text-gradient">Monad Mate</span>
+              <span className="font-bold text-sm text-gradient">MonadMate</span>
               <span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
                 LIVE
               </span>
+            </div>
+            <div className="mt-2 text-[11px] text-white/40">
+              📍 Taikoo Li Mall · next 60 min · Dining
             </div>
           </div>
           {/* Match card */}
           <div className="m-4 p-4 rounded-2xl bg-card-gradient border border-brand-violet/20">
             <div className="flex items-start gap-3 mb-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-lg font-bold">
-                A
+                L
               </div>
               <div>
-                <div className="font-semibold text-sm">Alex · Room: Devs</div>
-                <div className="text-xs text-white/50">92% compatibility</div>
+                <div className="font-semibold text-sm">Lin · 4F, same mall</div>
+                <div className="text-xs text-white/50">
+                  92% match · 7 meetups kept
+                </div>
               </div>
             </div>
             <div className="text-xs text-white/60 leading-relaxed mb-3">
-              "Both into Solidity and zero-knowledge proofs — rare combo. Stake 0.5
-              MON to connect?"
+              "Both free until 8pm and both want hotpot. Verified, and has kept
+              every meetup so far."
             </div>
             <div className="flex gap-2">
               <button className="flex-1 py-2 rounded-xl bg-brand-violet/20 border border-brand-violet/40 text-xs text-violet-300 font-medium">
                 Pass
               </button>
               <button className="flex-1 py-2 rounded-xl bg-cta-gradient text-white text-xs font-semibold">
-                Stake & Connect
+                Let's go
               </button>
             </div>
           </div>
           {/* Stake status */}
           <div className="mx-4 p-3 rounded-xl bg-white/5 border border-white/10">
-            <div className="text-xs text-white/50 mb-1">Your active stake</div>
+            <div className="text-xs text-white/50 mb-1">
+              Your commitment deposit
+            </div>
             <div className="flex items-center justify-between">
               <span className="font-bold text-green-400">0.50 MON</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                Escrowed
+                Refunds on check-in
               </span>
             </div>
           </div>

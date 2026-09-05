@@ -88,6 +88,15 @@ def _event_log_address() -> str:
         return os.environ.get("MONAD_EVENT_LOG_ADDRESS", "")
 
 
+def _credential_sbt_address() -> str:
+    try:
+        from ..core.config import settings  # noqa: PLC0415
+
+        return settings.MONAD_CREDENTIAL_SBT_ADDRESS or ""
+    except Exception:
+        return os.environ.get("MONAD_CREDENTIAL_SBT_ADDRESS", "")
+
+
 def _chain_id() -> int:
     try:
         from ..core.config import settings  # noqa: PLC0415
@@ -245,3 +254,24 @@ class MonadService:
             "reason": reason,
         }
         return self._submit_record("slash", str(stake_id), payload)
+
+    def submit_credential_record(
+        self,
+        credential_id: str,
+        holder_wallet: Optional[str],
+        metadata: dict,
+    ) -> Optional[str]:
+        """Record a soulbound fulfilment credential on-chain.
+
+        Writes the privacy-safe metadata (venue category, scene, outcome — never
+        the counterparty) through the event log. Returns the tx hash or None
+        when Monad is unavailable.
+        """
+        payload = {
+            "event": "credential",
+            "contract": _credential_sbt_address() or _event_log_address(),
+            "credential_id": str(credential_id),
+            "holder": holder_wallet,
+            "metadata": metadata,
+        }
+        return self._submit_record("credential", str(credential_id), payload)

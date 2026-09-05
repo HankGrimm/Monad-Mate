@@ -13,8 +13,9 @@ Nothing to distribute — the deployed URL is the product.
 https://monad-mate-trust-api-production.up.railway.app
 ```
 
-Users connect MetaMask or Rabby on Monad testnet (chain id `10143`) and sign the
-EIP-191 login challenge.
+Users can sign in with an email or phone code (managed account, no seed phrase) or
+connect MetaMask/Rabby on Monad testnet (chain id `10143`) and sign the EIP-191
+login challenge.
 
 ---
 
@@ -66,26 +67,28 @@ Recommended APK metadata:
 ```
 dist/
   icon.png              # 512x512 PNG
-  screenshot_1.png      # 1080x2340 — match discovery
-  screenshot_2.png      # 1080x2340 — stake-to-connect flow
-  screenshot_3.png      # 1080x2340 — GPS meetup attestation
+  screenshot_1.png      # 1080x2340 — post an intent at a venue
+  screenshot_2.png      # 1080x2340 — ranked candidates with reasons
+  screenshot_3.png      # 1080x2340 — check-in and credential
   feature_graphic.png   # 1024x500 banner (optional)
 ```
 
 Copy to reuse:
 
 - Name: **Monad Mate**
-- Tagline: Stake MON to DM, match, and meet.
-- Short description: Stake-to-interact social app. Skin in the game replaces swipe culture.
-- Long description: Monad Mate is a stake-to-interact social app where economic
-  accountability replaces swipe culture. Stake MON to enter rooms, request matches,
-  and unlock DMs. Genuine meetups release your stake. No-shows get slashed.
-  AI matchmaking. GPS attestation. Hedera HCS audit trail.
+- Tagline: Find someone to hang out with in the mall you're already in.
+- Short description: Post what you want to do in the next hour and match with
+  someone at the same venue. A small MON deposit keeps you both honest.
+- Long description: Monad Mate matches people who are in the same mall or
+  supermarket right now and want to do the same thing in the next hour. An AI
+  agent ranks candidates who share your venue, window, and intent and explains
+  why. Both sides put up a small MON deposit as a commitment to their own
+  attendance; a GPS or QR check-in returns it and mints a soulbound credential
+  recording that you kept your word — never who you met.
 
 ---
 
 ## Notes
 
-The previous Solana build targeted the Seeker dApp Store, which listed apps as
-on-chain NFTs on Solana mainnet. Monad has no equivalent first-party store, so
-distribution is PWA-first with an APK fallback.
+Distribution is PWA-first with an APK fallback: Monad has no first-party app store,
+and the dApp runs entirely in the browser.

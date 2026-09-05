@@ -145,6 +145,10 @@ class UserIdentityService:
             user.email = payload.email
         if payload.privacy_mode is not None:
             user.privacy_mode = payload.privacy_mode
+        if payload.gender is not None:
+            user.gender = payload.gender
+        if payload.birth_year is not None:
+            user.birth_year = payload.birth_year
         user.updated_at = datetime.utcnow()
         self.db.commit()
         self.db.refresh(user)

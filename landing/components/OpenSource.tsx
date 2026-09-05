@@ -29,24 +29,24 @@ const PACKAGES = [
 
 const CONTRIBUTIONS = [
   {
-    icon: "🏗️",
-    title: "Solidity Escrow Contract",
-    desc: 'Open-source escrow keyed by (staker, room_id). Reusable for any stake-gated Monad app. Built with Foundry, deployable to Monad testnet in one command.',
+    icon: "🎖️",
+    title: "Soulbound Credential Contract",
+    desc: "A fulfilment SBT where every transfer path reverts, metadata carries no counterparty identity, and arbitration can still amend an outcome. Reusable for any app recording real-world follow-through.",
   },
   {
-    icon: "🔐",
-    title: "x402 × Monad Bridge",
-    desc: "First-of-kind FastAPI middleware connecting Monad wallet auth with Coinbase x402 HTTP payment proofs on Base USDC.",
+    icon: "🏗️",
+    title: "Commitment Deposit Escrow",
+    desc: "Open-source escrow keyed by (staker, room_id). Reusable for any deposit-gated Monad app. Built with Foundry, deployable to Monad testnet in one command.",
+  },
+  {
+    icon: "📱",
+    title: "Managed Wallet Onboarding",
+    desc: "Deterministic key derivation for seed-phrase-free accounts, with keys never persisted, single-use login codes, disclosed custody, and a signature-verified exit to self-custody.",
   },
   {
     icon: "🧠",
     title: "Pure-Python Preference Embeddings",
     desc: "45-term bag-of-words vocabulary, L2-normalised, zero numpy dependency. Embeddable preference memory for resource-constrained environments.",
-  },
-  {
-    icon: "📋",
-    title: "HCS Safety Audit Pattern",
-    desc: "Reusable pattern for anchoring moderation decisions on Hedera HCS — immutable, verifiable, and GDPR-compatible.",
   },
 ];
 
@@ -63,9 +63,9 @@ export default function OpenSource() {
             <span className="text-gradient">Free to fork.</span>
           </h2>
           <p className="mt-4 text-white/50 max-w-xl mx-auto text-lg">
-            Monad Mate is MIT licensed. The primitives we built — stake gating,
-            reputation decay, x402 bridging — are being extracted as standalone
-            packages.
+            Monad Mate is MIT licensed. The primitives we built — deposit gating,
+            soulbound credentials, reputation decay — are being extracted as
+            standalone packages.
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export default function OpenSource() {
             View on GitHub
           </a>
           <p className="mt-3 text-white/35 text-sm">
-            MIT License · 324 tests · 94% coverage
+            MIT License · 451 tests passing
           </p>
         </div>
       </div>

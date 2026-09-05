@@ -60,10 +60,10 @@
       "examples": ["Mint Monad Mate Moment NFT after meetup", "List my Moment NFTs"]
     },
     {
-      "id": "sol-transfers",
+      "id": "mon-transfers",
       "name": "Gift MON",
       "description": "Transfer MON to another user's wallet.",
-      "tags": ["transfer", "sol", "gift"],
+      "tags": ["transfer", "mon", "gift"],
       "examples": ["Send 0.1 MON to a user"]
     }
   ]

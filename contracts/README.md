@@ -4,14 +4,20 @@ Solidity contracts for the Monad Mate trust layer, built with [Foundry](https://
 
 ## Contracts
 
-- `src/MonadMateEscrow.sol` — stake-to-interact escrow holding **native MON**.
-  Users stake MON against a room/match (`stake()` is payable, no token approval
-  needed); the backend authority refunds on a confirmed meetup or slashes on
-  no-show/harassment (slashed share goes to the safety fund). Bare transfers to
-  the contract are rejected — funds must enter through `stake()`.
+- `src/MonadMateEscrow.sol` — commitment-deposit escrow holding **native MON**.
+  Users deposit MON against a meetup (`stake()` is payable, no token approval
+  needed); the backend authority refunds on a confirmed check-in or slashes after
+  arbitration (slashed share goes to the safety fund). Bare transfers to the
+  contract are rejected — funds must enter through `stake()`.
 - `src/MonadMateEventLog.sol` — append-only event log. The backend writes
-  stake/refund/slash records here so each decision produces an explorer-visible
-  transaction. Replaces the SPL Memo program used in the earlier Solana build.
+  deposit/refund/slash/credential records here so each decision produces an
+  explorer-visible transaction.
+- `src/MonadMateFulfilmentSBT.sol` — soulbound fulfilment credential. Minted by
+  the backend after a confirmed meetup; every transfer and approval entrypoint
+  reverts, so the token can never move or be listed. On-chain metadata holds only
+  the venue category, scene, timestamp, duration, and outcome — no counterparty
+  identity. `correctOutcome()` lets arbitration amend a verdict, since an
+  uncorrectable wrong record is worse than no record.
 
 ## Setup
 
@@ -51,18 +57,19 @@ works either way and drops forge-std where the `lib/` remapping expects it.
 export MONAD_RPC_URL=https://testnet-rpc.monad.xyz
 export MONAD_DEPLOYER_KEY=0x...        # backend authority key
 export MONAD_SAFETY_FUND=0x...         # optional, defaults to deployer
+export MONAD_SBT_BASE_URI=https://...  # optional, credential metadata base URI
 bash scripts/deploy_testnet.sh
 ```
 
 The deployer address needs testnet MON for gas — get it from the faucet:
 https://faucet.monad.xyz
 
-The script prints the `MONAD_ESCROW_ADDRESS` and `MONAD_EVENT_LOG_ADDRESS`
-values to copy into the backend `.env`.
+The script prints `MONAD_ESCROW_ADDRESS`, `MONAD_EVENT_LOG_ADDRESS`, and
+`MONAD_CREDENTIAL_SBT_ADDRESS` to copy into the backend `.env`.
 
 ## Notes
 
 - Monad is EVM-equivalent, so no chain-specific opcodes or precompiles are used.
 - Chain id: `10143` (testnet). Explorer: https://testnet.monadexplorer.com
-- The backend must hold the `admin` key: only `admin` can call `refund` / `slash`,
-  and only allow-listed writers can append to the event log.
+- The backend must hold the `admin` key: only `admin` can call `refund` / `slash`
+  or mint credentials, and only allow-listed writers can append to the event log.

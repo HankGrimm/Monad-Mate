@@ -258,7 +258,7 @@ def test_intro_generation_returns_string(db):
 
     svc = MatchmakingService(db)
     user_a_obj = db.query(User).filter(User.id == user_a.id).first()
-    result = svc.generate_intro(user_a_obj, persona_b.id, context="Met at the Sol conference")
+    result = svc.generate_intro(user_a_obj, persona_b.id, context="Met at the Monad meetup")
 
     assert isinstance(result["intro"], str)
     assert len(result["intro"]) > 10

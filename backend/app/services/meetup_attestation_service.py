@@ -115,6 +115,12 @@ class MeetupAttestationService:
         if hcs_msg_id:
             attestation.hcs_message_id = hcs_msg_id
 
+        # Mint the soulbound fulfilment credential for both parties (R8).
+        # Imported here to avoid a circular import at module load.
+        from .fulfilment_credential_service import FulfilmentCredentialService
+
+        FulfilmentCredentialService(self.db).issue_for_attestation(attestation.id)
+
     def _get_or_404(self, attestation_id: UUID) -> MeetupAttestation:
         a = self.db.query(MeetupAttestation).filter(MeetupAttestation.id == attestation_id).first()
         if not a:

@@ -2,8 +2,7 @@
 pragma solidity ^0.8.24;
 
 /// @title Monad Mate Event Log
-/// @notice Replaces the SPL Memo program used on the previous Solana deployment.
-///         The backend writes stake/refund/slash records here so every decision
+/// @notice The backend writes stake/refund/slash records here so every decision
 ///         produces a real, explorer-visible transaction without requiring the
 ///         full ERC20 escrow flow to be wired up.
 /// @dev Payloads are opaque UTF-8 JSON strings. Indexed `eventType` and

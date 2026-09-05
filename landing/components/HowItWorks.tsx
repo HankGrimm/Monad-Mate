@@ -1,39 +1,39 @@
 const STEPS = [
   {
     n: "01",
-    icon: "🔐",
-    title: "Connect Your Wallet",
-    desc: "Sign in with your MetaMask or Rabby wallet. No email, no password. Your Monad public key is your identity. Verification tiers unlock higher-trust rooms.",
+    icon: "📱",
+    title: "Sign In, No Seed Phrase",
+    desc: "Log in with your email or phone. Monad Mate provisions a managed account for you — no seed phrase, no gas prompts. Bring your own MetaMask or Rabby instead if you'd rather self-custody.",
   },
   {
     n: "02",
-    icon: "🏠",
-    title: "Enter a Room",
-    desc: "Browse nearby rooms — devs meetup, IRL events, social lounges. Stake-gated rooms require a MON deposit to enter. Your stake comes back when you show up.",
+    icon: "📍",
+    title: "Post What You Want, Right Now",
+    desc: "Pick the mall or supermarket you're standing in, choose a scene — a meal, an arcade round, a shopping run — and set how long you've got. Matching is limited to that venue and that time window.",
   },
   {
     n: "03",
     icon: "🤖",
-    title: "AI Finds Your Match",
-    desc: "The match agent scores compatibility across 5 dimensions — shared interests, intent mode, reputation, room context, and safety. It surfaces matches, not just faces.",
+    title: "AI Surfaces Who's Actually Nearby",
+    desc: "The match agent ranks people at the same venue with an overlapping window and the same intent, factoring shared interests, follow-through history, and safety preferences. Every suggestion comes with a reason.",
   },
   {
     n: "04",
-    icon: "💰",
-    title: "Stake to Connect",
-    desc: "Put 0.5 MON in escrow to unlock the DM channel. Both parties stake. Bad actors forfeit. Genuine conversations earn reputation and get their stake back.",
+    icon: "🤝",
+    title: "Both Sides Confirm",
+    desc: "You see verification status and past follow-through before deciding. Either side can pass with no penalty. Only a mutual yes forms a team.",
   },
   {
     n: "05",
-    icon: "📍",
-    title: "Attest the Meetup",
-    desc: "After meeting, both parties submit GPS coordinates. Proximity verified within 100m. Confirmed meetup → stake released + reputation boosted on Hedera HCS.",
+    icon: "💰",
+    title: "Commit a Small Deposit",
+    desc: "Both parties put up a fixed MON deposit through the escrow contract. It's a commitment to your own attendance — not a bet on whether the other person shows.",
   },
   {
     n: "06",
     icon: "⭐",
-    title: "Build Portable Trust",
-    desc: "Your reputation score (reliability, safety, meetup rate, response rate) persists across rooms and sessions. High-trust users get lower required stakes.",
+    title: "Meet, Check In, Earn a Credential",
+    desc: "Confirm the meetup with GPS or a QR scan. Deposits return automatically, and a soulbound credential records the venue type, scene, and that you kept your word — never who you met.",
   },
 ];
 
@@ -48,12 +48,12 @@ export default function HowItWorks() {
           How It Works
         </div>
         <h2 className="text-4xl md:text-5xl font-black tracking-tight">
-          Skin in the game,{" "}
-          <span className="text-gradient">every interaction.</span>
+          From standing alone in a mall{" "}
+          <span className="text-gradient">to actually doing something.</span>
         </h2>
         <p className="mt-4 text-white/50 max-w-xl mx-auto text-lg">
-          Every step has economic weight. Genuine actors get rewarded. Bad
-          actors get slashed. The protocol enforces accountability.
+          Matching is the easy half. Monad Mate also plans the first hour and
+          makes showing up mean something.
         </p>
       </div>
 
