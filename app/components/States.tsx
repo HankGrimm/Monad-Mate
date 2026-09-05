@@ -70,3 +70,13 @@ export function ErrorBanner({
     </div>
   );
 }
+
+/** Confirmation banner for successful actions. */
+export function SuccessBanner({ message }: { message: string }) {
+  return (
+    <div className="flex items-start gap-space-xs rounded bg-tertiary/15 border border-tertiary/30 p-space-md text-tertiary">
+      <Icon name="check_circle" size={20} filled className="mt-0.5 shrink-0" />
+      <p className="min-w-0 flex-1 text-body-md break-words text-on-surface">{message}</p>
+    </div>
+  );
+}

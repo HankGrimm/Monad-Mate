@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppHeader from "@/components/AppHeader";
 import Avatar from "@/components/Avatar";
@@ -410,16 +411,20 @@ function Toggle({
 
 function VerificationNotice() {
   return (
-    <div className="flex items-start gap-space-sm rounded bg-secondary-container/20 border border-secondary/30 p-space-md">
+    <Link
+      href="/verification"
+      className="flex items-start gap-space-sm rounded bg-secondary-container/20 border border-secondary/30 p-space-md transition-transform active:scale-[0.99]"
+    >
       <Icon name="badge" size={20} className="mt-0.5 shrink-0 text-secondary" />
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-label-md text-on-surface">Verification required</p>
         <p className="text-body-sm text-on-surface-variant">
-          You need a verified phone or ID before you can post or accept a meetup.
-          This is what makes safety filters meaningful.
+          You need a verified phone before you can post or accept a meetup. Tap
+          here to verify.
         </p>
       </div>
-    </div>
+      <Icon name="chevron_right" size={20} className="mt-0.5 shrink-0 text-outline" />
+    </Link>
   );
 }
 

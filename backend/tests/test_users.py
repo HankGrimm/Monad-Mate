@@ -45,7 +45,10 @@ def test_wallet_challenge_returns_nonce(client):
     data = resp.json()
     assert "nonce" in data
     assert "expires_at" in data
-    assert len(data["nonce"]) == 64  # 32 bytes hex
+    # Non-prefixed hex nonces break wallets that interpret them as raw bytes,
+    # so the challenge carries a text prefix plus 32 bytes of entropy.
+    assert data["nonce"].startswith("MonadMate wallet verification: ")
+    assert len(data["nonce"]) > 64
 
 
 def test_wallet_challenge_stores_different_nonces_per_wallet(client):
