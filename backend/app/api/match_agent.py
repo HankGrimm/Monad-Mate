@@ -15,7 +15,7 @@ class PreferencesPayload:
     pass
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 
 
@@ -26,6 +26,23 @@ class PreferencesUpdate(BaseModel):
     dealbreakers: Optional[List[str]] = None
     location_range_km: Optional[float] = None
     personality_traits: Optional[List[str]] = None
+
+    # R2 persona dimensions. A birth date is taken rather than a sign so 星座
+    # and 生肖 are derived server-side and stay consistent.
+    birth_date: Optional[str] = Field(
+        None, description="ISO date (YYYY-MM-DD). Used to derive 星座 and 生肖."
+    )
+    mbti: Optional[str] = Field(None, max_length=4)
+    sleep_schedule: Optional[str] = Field(
+        None, description="early | night | flexible"
+    )
+
+    # R2 realistic dimensions
+    occupation: Optional[str] = Field(None, max_length=64)
+    industry: Optional[str] = Field(None, max_length=64)
+    education: Optional[str] = Field(None, max_length=32)
+    city: Optional[str] = Field(None, max_length=64)
+
     extra: Optional[Dict[str, Any]] = None
 
 

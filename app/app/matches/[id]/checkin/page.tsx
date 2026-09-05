@@ -41,6 +41,9 @@ function CheckIn({ matchId }: { matchId: string }) {
           (await api.attestations.initiate({
             match_id: matchId,
             method: "qr_code",
+            // R6: link the check-in to the meetup so the deposit can be
+            // released automatically when both sides confirm.
+            meetup_match_id: matchId,
           })),
       );
     } catch (err) {

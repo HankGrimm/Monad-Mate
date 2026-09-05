@@ -11,14 +11,19 @@ import type {
   AuthToken,
   Credit,
   CredentialList,
+  DepositRequirements,
+  IdVerificationResult,
   LoginCodeResponse,
   MeetupCandidate,
   MeetupMatch,
   MeetupMatchDetail,
+  MeetupPlan,
   MeetupRequest,
   MeetupRequestCreate,
+  PhoneVerificationStart,
   Stake,
   User,
+  VerificationStatus,
   WalletAccountInfo,
 } from "./types";
 
@@ -203,6 +208,23 @@ export const meetups = {
       body: JSON.stringify({ accept }),
     });
   },
+
+  /** R3: icebreakers, itinerary and a mini-game. Generated on first access. */
+  plan(matchId: string) {
+    return request<MeetupPlan>(`/meetups/matches/${matchId}/plan`);
+  },
+
+  regeneratePlan(matchId: string) {
+    return request<MeetupPlan>(`/meetups/matches/${matchId}/plan/regenerate`, {
+      method: "POST",
+    });
+  },
+
+  adoptPlan(matchId: string) {
+    return request<MeetupPlan>(`/meetups/matches/${matchId}/plan/adopt`, {
+      method: "POST",
+    });
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -210,10 +232,17 @@ export const meetups = {
 // ---------------------------------------------------------------------------
 
 export const stakes = {
+  requirements(amountMon: number) {
+    return request<DepositRequirements>(
+      `/stakes/deposit-requirements?amount_mon=${amountMon}`,
+    );
+  },
+
   create(payload: {
     stake_type: string;
     amount_mon: number;
     tx_hash?: string;
+    meetup_match_id?: string;
     target_user_id?: string;
   }) {
     return request<Stake>("/stakes", {
@@ -228,6 +257,40 @@ export const stakes = {
 };
 
 // ---------------------------------------------------------------------------
+// Verification (R4)
+// ---------------------------------------------------------------------------
+
+export const verification = {
+  status() {
+    return request<VerificationStatus>("/verification/me");
+  },
+
+  startPhone(phone: string) {
+    return request<PhoneVerificationStart>("/verification/phone/start", {
+      method: "POST",
+      body: JSON.stringify({ phone }),
+    });
+  },
+
+  confirmPhone(phone: string, code: string) {
+    return request<User>("/verification/phone/confirm", {
+      method: "POST",
+      body: JSON.stringify({ phone, code }),
+    });
+  },
+
+  submitId(documentNumber: string, birthYear?: number) {
+    return request<IdVerificationResult>("/verification/id/submit", {
+      method: "POST",
+      body: JSON.stringify({
+        document_number: documentNumber,
+        birth_year: birthYear,
+      }),
+    });
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Attestations
 // ---------------------------------------------------------------------------
 
@@ -235,6 +298,7 @@ export const attestations = {
   initiate(payload: {
     match_id: string;
     method: string;
+    meetup_match_id?: string;
     latitude?: number;
     longitude?: number;
   }) {
@@ -302,6 +366,7 @@ export const safety = {
 export const api = {
   auth,
   users,
+  verification,
   meetups,
   stakes,
   attestations,

@@ -34,14 +34,16 @@ from ..models.persona import Persona
 from ..models.reputation import ReputationScore
 from ..models.user import Gender, User, VerificationLevel
 from ..schemas.meetup_request import MeetupRequestCreate
+from .persona_affinity_service import persona_affinity
 from .preference_memory_service import PreferenceMemoryService
 
 # Ranking weights (sum to 1.0)
-_W_PREFERENCE = 0.30
-_W_CREDIT = 0.25
-_W_HISTORY = 0.20   # R11: scene + time-slot habit overlap
-_W_WINDOW = 0.15
-_W_SAFETY = 0.10
+_W_PREFERENCE = 0.24
+_W_CREDIT = 0.22
+_W_HISTORY = 0.18   # R11: scene + time-slot habit overlap
+_W_PERSONA = 0.14   # R2: 星座 / 生肖 / MBTI / 作息 / realistic overlap
+_W_WINDOW = 0.13
+_W_SAFETY = 0.09
 
 # R11 only kicks in once the user has enough history to be meaningful.
 _HISTORY_MIN_FULFILMENTS = 3
@@ -606,6 +608,16 @@ class MeetupRequestService:
             if history > 0.6:
                 reasons.append("Similar scene and time-slot habits")
 
+        # --- R2: persona affinity (星座 / 生肖 / MBTI / 作息 / realistic) ---
+        # A soft signal only. Whether these dimensions actually predict
+        # follow-through is an open question in the PRD, so the weight is modest
+        # and unknown fields resolve to neutral.
+        if prefs_a and prefs_b:
+            persona, persona_reasons = persona_affinity(prefs_a, prefs_b)
+            reasons.extend(persona_reasons[:2])
+        else:
+            persona = 0.5
+
         # --- Window overlap ratio ---
         overlap_start = max(request.window_start, candidate.window_start)
         overlap_end = min(request.window_end, candidate.window_end)
@@ -632,6 +644,7 @@ class MeetupRequestService:
             pref_sim * _W_PREFERENCE
             + credit * _W_CREDIT
             + history * _W_HISTORY
+            + persona * _W_PERSONA
             + window * _W_WINDOW
             + safety * _W_SAFETY,
             4,
@@ -640,6 +653,7 @@ class MeetupRequestService:
             "preference_similarity": round(pref_sim, 4),
             "credit_score": round(credit, 4),
             "history_affinity": round(history, 4),
+            "persona_affinity": round(persona, 4),
             "window_overlap": round(window, 4),
             "safety_score": round(safety, 4),
         }

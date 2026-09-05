@@ -168,18 +168,91 @@ export interface Stake {
   status: string;
   stake_type: string;
   tx_hash: string | null;
+  onchain_verified: boolean;
+  meetup_match_id: string | null;
+  explorer_url: string | null;
   created_at: string;
+}
+
+/** Where and how to send the commitment deposit. */
+export interface DepositRequirements {
+  chain_id: number;
+  rpc_url: string;
+  /** Null means on-chain deposits are not configured (demo mode). */
+  deposit_address: string | null;
+  amount_mon: number;
+  /** Native transfers are exactly 21,000; Monad bills the limit, not usage. */
+  gas_limit: number;
+  onchain_required: boolean;
+  explorer_base: string;
+}
+
+export interface ItineraryStep {
+  minute: number;
+  title: string;
+  detail: string;
+}
+
+export interface MeetupPlan {
+  id: string;
+  match_id: string;
+  venue_name: string | null;
+  venue_type: string | null;
+  scene: string | null;
+  duration_minutes: number | null;
+  party_size: number | null;
+  icebreakers: string[];
+  itinerary: ItineraryStep[];
+  mini_game: { name?: string; how_to_play?: string };
+  shared_interests: string[];
+  /** `llm` when the model produced it, `template` on deterministic fallback. */
+  source: "llm" | "template";
+  adopted: boolean;
+  created_at: string;
+}
+
+export interface VerificationStatus {
+  verification_level: VerificationLevel;
+  can_create_meetups: boolean;
+  phone_verified: boolean;
+  id_verified: boolean;
+  /** True when no real identity provider is integrated. */
+  id_verification_is_stub: boolean;
+  next_step: "verify_phone" | "verify_id" | null;
+}
+
+export interface PhoneVerificationStart {
+  phone: string;
+  expires_at: string;
+  delivery: string;
+  code: string | null;
+}
+
+export interface IdVerificationResult {
+  verification_level: VerificationLevel;
+  age_verified: boolean;
+  is_stub: boolean;
+  disclosure: string;
 }
 
 export interface Attestation {
   id: string;
   match_id: string;
+  meetup_match_id: string | null;
   method: string;
-  status: string;
+  status:
+    | "initiated"
+    | "pending_confirm"
+    | "confirmed"
+    // One side checked in and the window closed — under review, NOT a violation.
+    | "pending_arbitration"
+    | "failed"
+    | "expired";
   token: string | null;
   initiator_confirmed: boolean;
   counterparty_confirmed: boolean;
   hcs_message_id: string | null;
+  notes: string | null;
   created_at: string;
   confirmed_at: string | null;
 }

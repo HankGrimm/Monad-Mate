@@ -12,10 +12,11 @@ import StatusChip from "@/components/StatusChip";
 import { ErrorBanner, ScreenLoader } from "@/components/States";
 import { api, ApiError } from "@/lib/api";
 import { formatWindow, sceneIcon, sceneLabel, startsIn, venueIcon } from "@/lib/format";
-import type { MeetupMatchDetail, Stake } from "@/lib/types";
+import { DepositError, explorerTxUrl, sendDeposit } from "@/lib/monad";
+import type { DepositRequirements, MeetupMatchDetail, Stake } from "@/lib/types";
 
-/** Fixed commitment deposit. Mirrors MIN_STAKE_MEETUP_MON semantics. */
-const DEPOSIT_MON = 0.5;
+/** Fixed commitment deposit. Mirrors MIN_STAKE_MEETUP_MON on the backend. */
+const DEPOSIT_MON = 5.0;
 
 export default function MatchPage({ params }: { params: { id: string } }) {
   return <RequireAuth>{() => <MatchDetail id={params.id} />}</RequireAuth>;
@@ -25,22 +26,29 @@ function MatchDetail({ id }: { id: string }) {
   const router = useRouter();
   const [match, setMatch] = useState<MeetupMatchDetail | null>(null);
   const [stake, setStake] = useState<Stake | null>(null);
+  const [reqs, setReqs] = useState<DepositRequirements | null>(null);
   const [pledged, setPledged] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [stage, setStage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [detail, myStakes] = await Promise.all([
+      const [detail, myStakes, requirements] = await Promise.all([
         api.meetups.match(id),
         api.stakes.listMine().catch(() => [] as Stake[]),
+        api.stakes.requirements(DEPOSIT_MON).catch(() => null),
       ]);
       setMatch(detail);
-      // An active meetup deposit means this step is already done.
+      setReqs(requirements);
+      // A deposit already tied to *this* meetup means the step is done.
       setStake(
         myStakes.find(
-          (s) => s.stake_type === "confirm_meetup" && s.status === "active",
+          (s) =>
+            s.stake_type === "confirm_meetup" &&
+            s.status === "active" &&
+            s.meetup_match_id === id,
         ) ?? null,
       );
     } catch (err) {
@@ -71,17 +79,33 @@ function MatchDetail({ id }: { id: string }) {
     setBusy(true);
     setError(null);
     try {
+      let txHash: string | undefined;
+
+      // When the server publishes a deposit address, the deposit must be a real
+      // testnet transaction — the backend verifies it and rejects anything it
+      // can't confirm on-chain.
+      if (reqs?.onchain_required) {
+        setStage("Confirm the transaction in your wallet…");
+        const sent = await sendDeposit(reqs);
+        txHash = sent.txHash;
+        setStage("Verifying on Monad testnet…");
+      }
+
       const created = await api.stakes.create({
         stake_type: "confirm_meetup",
         amount_mon: DEPOSIT_MON,
+        meetup_match_id: id,
+        tx_hash: txHash,
       });
       setStake(created);
     } catch (err) {
-      setError(
-        err instanceof ApiError ? err.message : "Could not place the deposit.",
-      );
+      if (err instanceof DepositError) setError(err.message);
+      else if (err instanceof ApiError) setError(err.message);
+      else if (err instanceof Error) setError(err.message);
+      else setError("Could not place the deposit.");
     } finally {
       setBusy(false);
+      setStage(null);
     }
   }
 
@@ -232,6 +256,17 @@ function MatchDetail({ id }: { id: string }) {
                 Returned automatically when you both check in. This is a promise
                 about your own attendance — not a bet on whether {name} shows up.
               </p>
+              {reqs && (
+                <span className="mt-space-xs flex items-center gap-space-2xs text-label-sm text-outline">
+                  <Icon
+                    name={reqs.onchain_required ? "link" : "science"}
+                    size={14}
+                  />
+                  {reqs.onchain_required
+                    ? "Monad testnet · real MON transfer"
+                    : "Demo mode · no on-chain transfer configured"}
+                </span>
+              )}
             </div>
 
             <div className="flex flex-col gap-space-xs">
@@ -254,11 +289,31 @@ function MatchDetail({ id }: { id: string }) {
         <div className="mt-auto flex flex-col gap-space-sm pt-space-md">
           {stake ? (
             <>
-              <div className="flex items-center gap-space-sm rounded bg-tertiary/15 border border-tertiary/30 p-space-md">
-                <Icon name="check_circle" size={22} filled className="text-tertiary" />
-                <span className="min-w-0 flex-1 text-body-md text-on-surface">
-                  Deposit held. You&apos;re ready to meet.
-                </span>
+              <div className="flex items-start gap-space-sm rounded bg-tertiary/15 border border-tertiary/30 p-space-md">
+                <Icon
+                  name="check_circle"
+                  size={22}
+                  filled
+                  className="mt-0.5 shrink-0 text-tertiary"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-body-md text-on-surface">
+                    Deposit held. You&apos;re ready to meet.
+                  </p>
+                  {stake.tx_hash && (
+                    <a
+                      href={explorerTxUrl(stake.tx_hash)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-0.5 inline-flex items-center gap-space-2xs text-body-sm text-primary underline"
+                    >
+                      {stake.onchain_verified
+                        ? "Verified on Monad testnet"
+                        : "View transaction"}
+                      <Icon name="open_in_new" size={13} />
+                    </a>
+                  )}
+                </div>
               </div>
               <GradientButton
                 icon="qr_code_scanner"
@@ -312,9 +367,12 @@ function MatchDetail({ id }: { id: string }) {
               >
                 Confirm &amp; deposit {DEPOSIT_MON.toFixed(2)} MON
               </GradientButton>
-              <p className="flex items-center justify-center gap-space-2xs text-label-sm text-on-surface-variant">
+              <p className="flex items-center justify-center gap-space-2xs text-center text-label-sm text-on-surface-variant">
                 <Icon name="bolt" size={14} />
-                One tap on Monad — no gas prompt
+                {stage ??
+                  (reqs?.onchain_required
+                    ? "Your wallet will ask you to approve a MON transfer"
+                    : "Recorded without an on-chain transfer in demo mode")}
               </p>
             </>
           )}

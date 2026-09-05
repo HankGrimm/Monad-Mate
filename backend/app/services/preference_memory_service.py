@@ -10,6 +10,7 @@ The fallback ensures all tests pass and the API runs without external keys.
 from __future__ import annotations
 
 import math
+from datetime import date
 from typing import Optional
 from uuid import UUID
 
@@ -93,6 +94,7 @@ class PreferenceMemoryService:
                 existing.location_range_km = prefs["location_range_km"]
             if "personality_traits" in prefs:
                 existing.personality_traits = prefs["personality_traits"]
+            self._apply_persona_fields(existing, prefs)
             existing.embedding_vector = embedding
             self.db.commit()
             self.db.refresh(existing)
@@ -112,11 +114,43 @@ class PreferenceMemoryService:
             personality_traits=prefs.get("personality_traits"),
             embedding_vector=embedding,
         )
+        self._apply_persona_fields(record, prefs)
         self.db.add(record)
         self.db.commit()
         self.db.refresh(record)
         self._sync_to_zerodb(user_id, embedding, prefs)
         return record
+
+    @staticmethod
+    def _apply_persona_fields(record: UserPreferences, prefs: dict) -> None:
+        """Apply the R2 persona / realistic dimensions.
+
+        MBTI is normalised (and dropped when malformed) rather than stored raw, so
+        the affinity scorer can assume a valid 4-letter code. An unparseable
+        birth date is cleared rather than rejected — a bad optional field should
+        not fail the whole preference update.
+        """
+        from .persona_affinity_service import normalise_mbti  # noqa: PLC0415
+
+        if "birth_date" in prefs:
+            raw = prefs["birth_date"]
+            if isinstance(raw, str):
+                try:
+                    record.birth_date = date.fromisoformat(raw)
+                except ValueError:
+                    record.birth_date = None
+            else:
+                record.birth_date = raw
+
+        if "mbti" in prefs:
+            record.mbti = normalise_mbti(prefs["mbti"])
+
+        for field in ("sleep_schedule", "occupation", "industry", "education", "city"):
+            if field in prefs:
+                value = prefs[field]
+                setattr(
+                    record, field, value.strip() if isinstance(value, str) else value
+                )
 
     def get(self, user_id: UUID) -> Optional[UserPreferences]:
         return (
