@@ -1,0 +1,18 @@
+{
+  "name": "MonadMate",
+  "short_name": "MonadMate",
+  "description": "Find someone to hang out with in the mall you're already in.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#131318",
+  "theme_color": "#131318",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
