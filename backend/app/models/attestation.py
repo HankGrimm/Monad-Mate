@@ -21,6 +21,10 @@ class AttestationStatus(str, enum.Enum):
     INITIATED = "initiated"
     PENDING_CONFIRM = "pending_confirm"
     CONFIRMED = "confirmed"
+    # R7: only one side checked in before the window closed. This is explicitly
+    # NOT a violation — PRD §7 step 7 forbids judging a no-show from a one-sided
+    # signal, so the case goes to review instead of expiring or being penalised.
+    PENDING_ARBITRATION = "pending_arbitration"
     FAILED = "failed"
     EXPIRED = "expired"
 
@@ -30,6 +34,15 @@ class MeetupAttestation(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     match_id = Column(UUID(as_uuid=True), ForeignKey("sm_matches.id", ondelete="CASCADE"), nullable=False)
+    # R6/R7: link to the meetup pairing so deposits can be released or frozen
+    # from the check-in outcome. Nullable because legacy room-based matches have
+    # no meetup request behind them.
+    meetup_match_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("sm_meetup_request_matches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     initiator_user_id = Column(UUID(as_uuid=True), ForeignKey("sm_users.id", ondelete="SET NULL"), nullable=True)
     counterparty_user_id = Column(UUID(as_uuid=True), ForeignKey("sm_users.id", ondelete="SET NULL"), nullable=True)
     method = Column(SAEnum(AttestationMethod), nullable=False)

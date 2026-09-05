@@ -1,4 +1,6 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, Enum as SAEnum, Float, Text
+from sqlalchemy import (
+    Column, String, DateTime, ForeignKey, Enum as SAEnum, Float, Text, Boolean,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -31,12 +33,24 @@ class Stake(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("sm_users.id", ondelete="CASCADE"), nullable=False)
     room_id = Column(UUID(as_uuid=True), ForeignKey("sm_rooms.id", ondelete="SET NULL"), nullable=True)
+    # R6: the deposit must be reachable from the meetup it backs, otherwise
+    # "refund automatically once both sides check in" has nothing to key off.
+    meetup_match_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("sm_meetup_request_matches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     target_user_id = Column(UUID(as_uuid=True), ForeignKey("sm_users.id", ondelete="SET NULL"), nullable=True)
     stake_type = Column(SAEnum(StakeType), nullable=False)
     status = Column(SAEnum(StakeStatus), default=StakeStatus.PENDING, nullable=False)
     amount_mon = Column(Float, nullable=False)
     currency = Column(String(10), default="MON", nullable=False)
     tx_hash = Column(String, nullable=True)
+    # True only once the funding transaction has been checked against the chain
+    # (recipient, amount, confirmation). Stays False when no deposit address is
+    # configured, so a demo deposit is distinguishable from a verified one.
+    onchain_verified = Column(Boolean, default=False, nullable=False)
     escrow_id = Column(UUID(as_uuid=True), ForeignKey("sm_escrows.id", ondelete="SET NULL"), nullable=True)
     slash_reason = Column(Text, nullable=True)
     expires_at = Column(DateTime, nullable=True)

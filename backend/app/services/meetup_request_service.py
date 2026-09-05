@@ -83,6 +83,8 @@ class MeetupRequestService:
     def create(self, user: User, payload: MeetupRequestCreate) -> MeetupRequest:
         # PRD R4: 未完成实名认证不可发起/接受匹配
         self._require_verified(user)
+        # PRD R5: 被举报方在复核期内不可发起新匹配
+        self._require_not_under_review(user)
         self._expire_stale()
 
         # One open request per user at a time keeps the matching graph simple
@@ -250,6 +252,7 @@ class MeetupRequestService:
     ) -> MeetupRequestMatch:
         """Create (or reuse) a pairing and record the requester's acceptance."""
         self._require_verified(user)
+        self._require_not_under_review(user)
         request = self.get_or_404(request_id)
         if request.user_id != user.id:
             raise HTTPException(403, "Not your request")
@@ -320,6 +323,12 @@ class MeetupRequestService:
         side = self._side_of(match, user.id)
         if side is None:
             raise HTTPException(403, "You are not part of this match")
+
+        # Declining is always allowed — a user under review must still be able to
+        # back out of a pairing. Only acceptance is gated.
+        if accept:
+            self._require_not_under_review(user)
+
 
         if not accept:
             # PRD §7 step 4: 任一方拒绝则流程终止，不影响信用
@@ -445,6 +454,25 @@ class MeetupRequestService:
                 403,
                 "Identity verification required before creating or accepting a meetup.",
             )
+
+    def _require_not_under_review(self, user: User) -> None:
+        """R5: a reported user cannot start or accept a meetup while under review.
+
+        Deliberately blocks *both* directions of the flow, since letting a
+        reported user accept invitations would leave the same exposure open.
+        The bar is unresolved reports at or above the repeat-offender threshold,
+        so a single unverified accusation cannot lock someone out — that would
+        turn reporting into a denial-of-service tool.
+        """
+        from .report_service import ReportService  # noqa: PLC0415
+
+        if ReportService(self.db).is_repeat_offender(user.id):
+            raise HTTPException(
+                403,
+                "Your account is under safety review and cannot start or accept "
+                "meetups until it is resolved.",
+            )
+
 
     def _side_of(self, match: MeetupRequestMatch, user_id: UUID) -> Optional[UUID]:
         """Return which request id in *match* belongs to *user_id*, else None."""

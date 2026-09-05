@@ -10,7 +10,16 @@ class StakeCreate(BaseModel):
     amount_mon: float = Field(..., gt=0)
     room_id: Optional[UUID] = None
     target_user_id: Optional[UUID] = None
-    tx_hash: Optional[str] = None
+    meetup_match_id: Optional[UUID] = Field(
+        None,
+        description="Meetup this deposit backs. Required for confirm_meetup so the "
+        "deposit can be auto-refunded when both sides check in.",
+    )
+    tx_hash: Optional[str] = Field(
+        None,
+        description="Funding transaction on Monad. Required when a deposit "
+        "address is configured; verified on-chain before the stake goes active.",
+    )
 
 
 class StakeResponse(BaseModel):
@@ -21,6 +30,8 @@ class StakeResponse(BaseModel):
     amount_mon: float
     currency: str
     tx_hash: Optional[str]
+    onchain_verified: bool = False
+    meetup_match_id: Optional[UUID] = None
     escrow_id: Optional[UUID]
     expires_at: Optional[datetime]
     created_at: datetime
@@ -37,6 +48,21 @@ class StakeResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DepositRequirements(BaseModel):
+    """What the client needs in order to send a real testnet deposit."""
+    chain_id: int
+    rpc_url: str
+    deposit_address: Optional[str] = Field(
+        None, description="None means on-chain deposits are not configured."
+    )
+    amount_mon: float
+    # Native transfers are always exactly 21,000 gas. Monad charges on the gas
+    # *limit* rather than usage, so the client must not pad an estimate here.
+    gas_limit: int = 21_000
+    onchain_required: bool
+    explorer_base: str = "https://testnet.monadexplorer.com"
 
 
 class StakeSlash(BaseModel):

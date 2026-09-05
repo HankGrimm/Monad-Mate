@@ -1,5 +1,5 @@
 """
-Tests for Celery beat tasks: escrow_tasks, match_tasks, reputation_tasks.
+Tests for Celery beat tasks: attestation_tasks, match_tasks, reputation_tasks.
 Tasks are called directly (no broker needed) with SQLite in-memory DB.
 """
 import uuid
@@ -19,78 +19,157 @@ def _make_session(db):
     return cm
 
 
-# ── escrow_tasks ──────────────────────────────────────────────────────────────
+def _attestation(db, *, initiator_confirmed=False, counterparty_confirmed=False,
+                 expires_at=None):
+    """Build an attestation with a real match behind it."""
+    from app.models.attestation import (
+        AttestationMethod, AttestationStatus, MeetupAttestation,
+    )
+    from app.models.match import Match, MatchStatus
+    from app.models.persona import IntentMode, Persona
+    from app.models.user import User
 
-class TestAutoSlashExpiredEscrows:
-    def test_no_expired_escrows_returns_zero(self, db):
-        from app.tasks.escrow_tasks import auto_slash_expired_escrows
+    a = User(id=uuid.uuid4(), wallet_address=f"0x{uuid.uuid4().hex[:38]}")
+    b = User(id=uuid.uuid4(), wallet_address=f"0x{uuid.uuid4().hex[:38]}")
+    db.add_all([a, b])
+    db.flush()
+
+    pa = Persona(id=uuid.uuid4(), user_id=a.id, display_name="A",
+                 intent_mode=IntentMode.SOCIAL)
+    pb = Persona(id=uuid.uuid4(), user_id=b.id, display_name="B",
+                 intent_mode=IntentMode.SOCIAL)
+    db.add_all([pa, pb])
+    db.flush()
+
+    match = Match(id=uuid.uuid4(), requester_persona_id=pa.id,
+                  target_persona_id=pb.id, status=MatchStatus.ACCEPTED)
+    db.add(match)
+    db.flush()
+
+    att = MeetupAttestation(
+        id=uuid.uuid4(),
+        match_id=match.id,
+        initiator_user_id=a.id,
+        counterparty_user_id=b.id,
+        method=AttestationMethod.QR_CODE,
+        status=AttestationStatus.PENDING_CONFIRM,
+        initiator_confirmed=initiator_confirmed,
+        counterparty_confirmed=counterparty_confirmed,
+        expires_at=expires_at or (datetime.utcnow() - timedelta(hours=1)),
+    )
+    db.add(att)
+    db.commit()
+    db.refresh(att)
+    return att
+
+
+# ── attestation_tasks (R6 / R7) ───────────────────────────────────────────────
+
+class TestRouteExpiredAttestations:
+    def test_nothing_stale_returns_zero(self, db):
+        from app.tasks.attestation_tasks import route_expired_attestations
         with patch("app.core.database.SessionLocal", return_value=_make_session(db)):
-            result = auto_slash_expired_escrows.run()
-        assert result["slashed"] == 0
+            result = route_expired_attestations.run()
+        assert result["pending_arbitration"] == 0
+        assert result["expired"] == 0
         assert result["errors"] == 0
-        assert "ran_at" in result
 
     def test_returns_summary_dict_shape(self, db):
-        from app.tasks.escrow_tasks import auto_slash_expired_escrows
+        from app.tasks.attestation_tasks import route_expired_attestations
         with patch("app.core.database.SessionLocal", return_value=_make_session(db)):
-            result = auto_slash_expired_escrows.run()
-        assert set(result.keys()) == {"slashed", "errors", "ran_at"}
+            result = route_expired_attestations.run()
+        assert set(result.keys()) == {
+            "pending_arbitration", "expired", "errors", "ran_at",
+        }
 
-    def test_slashing_exception_increments_errors(self, db):
-        from app.models.escrow import Escrow, EscrowStatus, EscrowType
-        from app.models.user import User
-        import uuid as _uuid
+    def test_one_sided_checkin_goes_to_arbitration_not_slashed(self, db):
+        """The core PRD §7 rule: a one-sided check-in is never a no-show."""
+        from app.models.attestation import AttestationStatus
+        from app.tasks.attestation_tasks import route_expired_attestations
 
-        # Create an escrow that looks expired (deadline in the past, status locked)
-        # The model uses status="open" not "locked" so query returns nothing —
-        # test the error path by patching SlashingPolicyService
-        user = User(id=_uuid.uuid4(), wallet_address="w_slashtest", is_active=True)
-        db.add(user)
-        db.commit()
+        att = _attestation(db, initiator_confirmed=True)
 
-        from app.tasks.escrow_tasks import auto_slash_expired_escrows
+        with patch("app.core.database.SessionLocal", return_value=_make_session(db)):
+            result = route_expired_attestations.run()
 
-        mock_escrow = MagicMock()
-        mock_escrow.id = _uuid.uuid4()
-        # Use a MagicMock that returns itself for any chained call, then .all() returns our list
-        query_chain = MagicMock()
-        query_chain.all.return_value = [mock_escrow]
+        assert result["pending_arbitration"] == 1
+        assert result["expired"] == 0
+        db.refresh(att)
+        assert att.status == AttestationStatus.PENDING_ARBITRATION
+        assert att.notes and "not treated as a no-show" in att.notes
+
+    def test_nobody_checked_in_just_lapses(self, db):
+        from app.models.attestation import AttestationStatus
+        from app.tasks.attestation_tasks import route_expired_attestations
+
+        att = _attestation(db)
+
+        with patch("app.core.database.SessionLocal", return_value=_make_session(db)):
+            result = route_expired_attestations.run()
+
+        assert result["expired"] == 1
+        assert result["pending_arbitration"] == 0
+        db.refresh(att)
+        assert att.status == AttestationStatus.EXPIRED
+
+    def test_unexpired_attestation_untouched(self, db):
+        from app.models.attestation import AttestationStatus
+        from app.tasks.attestation_tasks import route_expired_attestations
+
+        att = _attestation(
+            db, initiator_confirmed=True,
+            expires_at=datetime.utcnow() + timedelta(hours=2),
+        )
+
+        with patch("app.core.database.SessionLocal", return_value=_make_session(db)):
+            result = route_expired_attestations.run()
+
+        assert result["pending_arbitration"] == 0
+        db.refresh(att)
+        assert att.status == AttestationStatus.PENDING_CONFIRM
+
+    def test_no_task_can_slash_a_deposit(self, db):
+        """Regression guard: the hourly job must never penalise anyone.
+
+        The previous implementation auto-slashed expired escrows, which
+        contradicted the PRD. Assert no stake ends up slashed.
+        """
+        from app.models.stake import Stake, StakeStatus
+        from app.tasks.attestation_tasks import route_expired_attestations
+
+        _attestation(db, initiator_confirmed=True)
+        _attestation(db)
+
+        with patch("app.core.database.SessionLocal", return_value=_make_session(db)):
+            route_expired_attestations.run()
+
+        assert db.query(Stake).filter(Stake.status == StakeStatus.SLASHED).count() == 0
+
+    def test_error_path_increments_errors(self, db):
+        from app.tasks.attestation_tasks import route_expired_attestations
+
+        stale = MagicMock()
+        stale.id = uuid.uuid4()
+        stale.initiator_confirmed = True
+        stale.counterparty_confirmed = False
+
         db_mock = MagicMock()
-        db_mock.query.return_value.filter.return_value = query_chain
-        query_chain.filter.return_value = query_chain
+        chain = MagicMock()
+        chain.all.return_value = [stale]
+        db_mock.query.return_value.filter.return_value = chain
         cm = MagicMock()
         cm.__enter__ = MagicMock(return_value=db_mock)
         cm.__exit__ = MagicMock(return_value=False)
 
-        with patch("app.core.database.SessionLocal", return_value=cm), \
-             patch("app.services.slashing_policy_service.SlashingPolicyService") as MockSvc:
-            MockSvc.return_value.slash.side_effect = Exception("slash failed")
-            result = auto_slash_expired_escrows.run()
+        with patch("app.core.database.SessionLocal", return_value=cm), patch(
+            "app.services.meetup_attestation_service.MeetupAttestationService"
+        ) as MockSvc:
+            MockSvc.return_value.mark_pending_arbitration.side_effect = Exception(
+                "boom"
+            )
+            result = route_expired_attestations.run()
 
         assert result["errors"] == 1
-        assert result["slashed"] == 0
-
-    def test_successful_slash_increments_count(self, db):
-        from app.tasks.escrow_tasks import auto_slash_expired_escrows
-        import uuid as _uuid
-
-        mock_escrow = MagicMock()
-        mock_escrow.id = _uuid.uuid4()
-        query_chain = MagicMock()
-        query_chain.all.return_value = [mock_escrow]
-        db_mock = MagicMock()
-        db_mock.query.return_value.filter.return_value = query_chain
-        query_chain.filter.return_value = query_chain
-        cm = MagicMock()
-        cm.__enter__ = MagicMock(return_value=db_mock)
-        cm.__exit__ = MagicMock(return_value=False)
-
-        with patch("app.core.database.SessionLocal", return_value=cm), \
-             patch("app.services.slashing_policy_service.SlashingPolicyService"):
-            result = auto_slash_expired_escrows.run()
-
-        assert result["slashed"] == 1
-        assert result["errors"] == 0
 
 
 # ── match_tasks ───────────────────────────────────────────────────────────────

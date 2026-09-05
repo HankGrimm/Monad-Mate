@@ -13,6 +13,7 @@ from .match_agent import UserPreferences
 from .moment_nft import MomentNFT
 from .transfer import Transfer
 from .meetup_request import MeetupRequest, MeetupRequestMatch
+from .meetup_plan import MeetupPlan
 from .fulfilment_credential import FulfilmentCredential, CreditProfile
 
 __all__ = [
@@ -20,6 +21,6 @@ __all__ = [
     "Match", "Message", "MeetupAttestation",
     "ReputationScore", "Report", "Block", "UserPreferences",
     "MomentNFT", "Transfer",
-    "MeetupRequest", "MeetupRequestMatch",
+    "MeetupRequest", "MeetupRequestMatch", "MeetupPlan",
     "FulfilmentCredential", "CreditProfile",
 ]

@@ -9,7 +9,7 @@ celery_app = Celery(
     broker=REDIS_URL,
     backend=REDIS_URL,
     include=[
-        "app.tasks.escrow_tasks",
+        "app.tasks.attestation_tasks",
         "app.tasks.match_tasks",
         "app.tasks.reputation_tasks",
     ],
@@ -26,8 +26,10 @@ celery_app.conf.update(
 )
 
 celery_app.conf.beat_schedule = {
-    "auto-slash-expired-escrows": {
-        "task": "app.tasks.escrow_tasks.auto_slash_expired_escrows",
+    # Replaces the former auto-slash job: a stale check-in is routed to
+    # arbitration or lapsed, never penalised automatically (PRD §7 step 7).
+    "route-expired-attestations": {
+        "task": "app.tasks.attestation_tasks.route_expired_attestations",
         "schedule": crontab(minute=0),  # every hour
     },
     "expire-stale-matches": {

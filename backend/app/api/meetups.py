@@ -9,10 +9,12 @@ from uuid import UUID
 from ..core.auth import get_current_user
 from ..core.database import get_db
 from ..models.user import User
+from ..schemas.meetup_plan import MeetupPlanResponse
 from ..schemas.meetup_request import (
     MeetupCandidate, MeetupMatchDecision, MeetupMatchDetail, MeetupMatchResponse,
     MeetupRequestCreate, MeetupRequestResponse,
 )
+from ..services.meetup_plan_service import MeetupPlanService
 from ..services.meetup_request_service import MeetupRequestService
 
 router = APIRouter(prefix="/v1/meetups", tags=["meetups"])
@@ -120,3 +122,38 @@ async def respond_to_match(
 ):
     """Accept or pass. Passing terminates the pairing with no credit impact."""
     return MeetupRequestService(db).respond(current_user, match_id, payload.accept)
+
+
+@router.get("/matches/{match_id}/plan", response_model=MeetupPlanResponse)
+async def get_plan(
+    match_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Icebreakers, a time-boxed activity plan and one mini-game (R3).
+
+    Generated on first access once both sides have confirmed. Falls back to a
+    deterministic scene template when the LLM is unavailable, so the flow never
+    dead-ends — check `source` to tell which path produced it.
+    """
+    return MeetupPlanService(db).get_or_create(current_user, match_id)
+
+
+@router.post("/matches/{match_id}/plan/regenerate", response_model=MeetupPlanResponse)
+async def regenerate_plan(
+    match_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Throw the current plan away and build another one."""
+    return MeetupPlanService(db).regenerate(current_user, match_id)
+
+
+@router.post("/matches/{match_id}/plan/adopt", response_model=MeetupPlanResponse)
+async def adopt_plan(
+    match_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Mark the plan as the one you're using — feeds the adoption-rate metric."""
+    return MeetupPlanService(db).mark_adopted(current_user, match_id)

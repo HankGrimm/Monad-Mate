@@ -54,6 +54,9 @@ class User(Base):
     phone = Column(String, unique=True, nullable=True)
     gender = Column(SAEnum(Gender), default=Gender.UNDISCLOSED, nullable=False)
     birth_year = Column(Integer, nullable=True)
+    # Salted hash of an ID document number (R4). The document itself is never
+    # stored; this exists only so one document cannot verify many accounts.
+    id_document_hash = Column(String, nullable=True, index=True)
     age_verified = Column(Boolean, default=False, nullable=False)
     verification_level = Column(
         SAEnum(VerificationLevel), default=VerificationLevel.WALLET, nullable=False

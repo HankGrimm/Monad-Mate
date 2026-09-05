@@ -7,13 +7,30 @@ from ..core.auth import get_current_user
 from ..core.config import settings
 from ..models.user import User
 from ..models.stake import StakeType
-from ..schemas.stake import StakeCreate, StakeResponse, StakeSlash
+from ..schemas.stake import (
+    DepositRequirements, StakeCreate, StakeResponse, StakeSlash,
+)
 from ..schemas.escrow import EscrowCreate, EscrowResponse, EscrowDispute
 from ..services.stake_service import StakeService
 from ..services.escrow_service import EscrowService
 from ..middleware.x402_payment import require_x402_payment
 
 router = APIRouter(tags=["stakes"])
+
+
+@router.get("/v1/stakes/deposit-requirements", response_model=DepositRequirements)
+async def deposit_requirements(
+    amount_mon: float = settings.MIN_STAKE_MEETUP_MON,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Where and how to send the commitment deposit.
+
+    `onchain_required` tells the client whether a real testnet transaction is
+    mandatory. When it is, the deposit must be sent to `deposit_address` and the
+    resulting hash passed to `POST /v1/stakes`.
+    """
+    return StakeService(db).deposit_requirements(amount_mon)
 
 
 @router.post("/v1/stakes", response_model=StakeResponse, status_code=201)

@@ -106,6 +106,21 @@ def _chain_id() -> int:
         return int(os.environ.get("MONAD_CHAIN_ID", "10143"))
 
 
+def deposit_address() -> str:
+    """Address commitment deposits must be sent to.
+
+    Prefers an explicit ``MONAD_DEPOSIT_ADDRESS``; falls back to the escrow
+    contract. Empty means no on-chain deposit is configured, and the backend
+    accepts deposits without a verified transaction (demo mode).
+    """
+    try:
+        from ..core.config import settings  # noqa: PLC0415
+
+        return settings.MONAD_DEPOSIT_ADDRESS or settings.MONAD_ESCROW_ADDRESS or ""
+    except Exception:
+        return os.environ.get("MONAD_DEPOSIT_ADDRESS", "")
+
+
 def _to_bytes32(value: str) -> bytes:
     """Right-pad a short UTF-8 tag to 32 bytes (truncating if oversized)."""
     return value.encode("utf-8")[:32].ljust(32, b"\x00")
@@ -275,3 +290,73 @@ class MonadService:
             "metadata": metadata,
         }
         return self._submit_record("credential", str(credential_id), payload)
+
+    # ------------------------------------------------------------------
+    # Deposit verification
+    # ------------------------------------------------------------------
+
+    def verify_deposit(
+        self,
+        tx_hash: str,
+        expected_from: str,
+        expected_amount_mon: float,
+    ) -> dict:
+        """Check that *tx_hash* is a real MON deposit for this stake.
+
+        Verifies, in order: the transaction exists, it succeeded, it was sent by
+        ``expected_from``, it paid the deposit address, and the value is at least
+        ``expected_amount_mon``. A small tolerance is allowed on the amount to
+        absorb float/wei rounding in the client.
+
+        Returns ``{"verified": bool, "reason": str, "value_mon": float | None}``.
+        The caller decides whether an unverified deposit is fatal — that depends
+        on whether a deposit address is configured at all.
+        """
+        target = deposit_address()
+        if not target:
+            return {
+                "verified": False,
+                "reason": "no_deposit_address_configured",
+                "value_mon": None,
+            }
+
+        try:
+            from web3 import Web3  # type: ignore
+
+            w3 = Web3(Web3.HTTPProvider(_rpc_url()))
+            tx = w3.eth.get_transaction(tx_hash)
+            receipt = w3.eth.get_transaction_receipt(tx_hash)
+
+            if receipt is None or receipt.get("status") != 1:
+                return {"verified": False, "reason": "tx_failed", "value_mon": None}
+
+            to_addr = (tx.get("to") or "").lower()
+            if to_addr != target.lower():
+                return {
+                    "verified": False,
+                    "reason": "wrong_recipient",
+                    "value_mon": None,
+                }
+
+            from_addr = (tx.get("from") or "").lower()
+            if from_addr != expected_from.lower():
+                return {"verified": False, "reason": "wrong_sender", "value_mon": None}
+
+            value_mon = float(Web3.from_wei(tx.get("value", 0), "ether"))
+            # 1e-9 MON tolerance — far below any meaningful deposit, but enough
+            # to absorb client-side float formatting.
+            if value_mon + 1e-9 < expected_amount_mon:
+                return {
+                    "verified": False,
+                    "reason": "amount_too_low",
+                    "value_mon": value_mon,
+                }
+
+            logger.info(
+                "Deposit verified | tx=%s from=%s value=%s MON", tx_hash, from_addr, value_mon
+            )
+            return {"verified": True, "reason": "ok", "value_mon": value_mon}
+
+        except Exception as exc:
+            logger.warning("Deposit verification failed | tx=%s error=%s", tx_hash, exc)
+            return {"verified": False, "reason": "lookup_failed", "value_mon": None}

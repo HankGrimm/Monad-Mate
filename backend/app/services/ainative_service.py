@@ -115,6 +115,44 @@ def _fallback_intro(
 
 
 # ---------------------------------------------------------------------------
+# LLM: meetup plan generation (R3)
+# ---------------------------------------------------------------------------
+
+def generate_plan_completion(*, system: str, user_prompt: str) -> Optional[str]:
+    """Raw chat completion used by the meetup plan generator.
+
+    Returns the model's text, or None on any failure so the caller can fall back
+    to a deterministic template. Temperature is kept low because the output must
+    parse as JSON.
+    """
+    if not _is_configured():
+        return None
+
+    try:
+        resp = httpx.post(
+            f"{_BASE}/api/v1/chat/completions",
+            json={
+                "model": "llama-3.3-70b",
+                "max_tokens": 700,
+                "temperature": 0.4,
+                "messages": [{"role": "user", "content": user_prompt}],
+                "system": system,
+            },
+            headers=_headers(),
+            timeout=20,
+        )
+        if resp.status_code == 200:
+            content = resp.json()["choices"][0]["message"]["content"].strip()
+            logger.info("AINative generated meetup plan (%d chars)", len(content))
+            return content
+        logger.warning("AINative plan HTTP %s: %s", resp.status_code, resp.text[:80])
+    except Exception as exc:
+        logger.warning("AINative plan error: %s", exc)
+
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Embeddings: real 768-dim vectors via AINative ZeroDB
 # ---------------------------------------------------------------------------
 

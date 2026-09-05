@@ -25,6 +25,7 @@ class MeetupAttestationService:
         attestation = MeetupAttestation(
             id=uuid.uuid4(),
             match_id=payload.match_id,
+            meetup_match_id=payload.meetup_match_id,
             initiator_user_id=user.id,
             method=payload.method,
             status=AttestationStatus.INITIATED,
@@ -115,11 +116,42 @@ class MeetupAttestationService:
         if hcs_msg_id:
             attestation.hcs_message_id = hcs_msg_id
 
+        # R6: both sides checked in, so both deposits are released automatically.
+        # Neither user has to ask for their money back.
+        if attestation.meetup_match_id:
+            from .stake_service import StakeService
+
+            StakeService(self.db).refund_for_match(attestation.meetup_match_id)
+
         # Mint the soulbound fulfilment credential for both parties (R8).
         # Imported here to avoid a circular import at module load.
         from .fulfilment_credential_service import FulfilmentCredentialService
 
         FulfilmentCredentialService(self.db).issue_for_attestation(attestation.id)
+
+    def mark_pending_arbitration(
+        self, attestation: MeetupAttestation, reason: str
+    ) -> MeetupAttestation:
+        """R7: one side checked in and the window closed.
+
+        This is deliberately not a violation. PRD §7 step 7 forbids treating a
+        one-sided signal as proof of a no-show, so the attestation goes to review
+        and the deposits are frozen rather than slashed. A human decision is
+        required to resolve it either way.
+        """
+        attestation.status = AttestationStatus.PENDING_ARBITRATION
+        attestation.notes = reason
+
+        if attestation.meetup_match_id:
+            from .stake_service import StakeService
+
+            StakeService(self.db).mark_disputed_for_match(
+                attestation.meetup_match_id, reason
+            )
+
+        self.db.commit()
+        self.db.refresh(attestation)
+        return attestation
 
     def _get_or_404(self, attestation_id: UUID) -> MeetupAttestation:
         a = self.db.query(MeetupAttestation).filter(MeetupAttestation.id == attestation_id).first()

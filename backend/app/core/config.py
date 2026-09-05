@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
 
+    # Verification (R4). No KYC vendor is integrated; the ID step is a stub that
+    # checks nothing. It is therefore only enabled in development unless an
+    # operator explicitly opts in.
+    ALLOW_STUB_ID_VERIFICATION: bool = False
+
     # Monad (EVM)
     MONAD_RPC_URL: str = "https://testnet-rpc.monad.xyz"
     MONAD_NETWORK: str = "testnet"
@@ -27,6 +32,10 @@ class Settings(BaseSettings):
     MONAD_ESCROW_ADDRESS: Optional[str] = None
     MONAD_EVENT_LOG_ADDRESS: Optional[str] = None
     MONAD_CREDENTIAL_SBT_ADDRESS: Optional[str] = None
+    # Address commitment deposits are sent to. When set, a deposit is only
+    # accepted with a transaction hash that verifies on-chain; when empty the
+    # backend runs in demo mode and records deposits without a chain check.
+    MONAD_DEPOSIT_ADDRESS: Optional[str] = None
     MONAD_PRIVATE_KEY: Optional[str] = None
     MONAD_KEYSTORE_PATH: str = "~/.monad/backend.key"
 

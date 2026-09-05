@@ -11,6 +11,11 @@ class AttestationInitiate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
     escrow_id: Optional[UUID] = None
+    meetup_match_id: Optional[UUID] = Field(
+        None,
+        description="Meetup pairing this check-in belongs to. Required for the "
+        "deposit to be released automatically on mutual confirmation.",
+    )
 
 
 class AttestationConfirm(BaseModel):
@@ -22,12 +27,14 @@ class AttestationConfirm(BaseModel):
 class AttestationResponse(BaseModel):
     id: UUID
     match_id: UUID
+    meetup_match_id: Optional[UUID] = None
     method: AttestationMethod
     status: AttestationStatus
     token: Optional[str]
     initiator_confirmed: bool
     counterparty_confirmed: bool
     hcs_message_id: Optional[str]
+    notes: Optional[str] = None
     expires_at: Optional[datetime]
     created_at: datetime
     confirmed_at: Optional[datetime]
