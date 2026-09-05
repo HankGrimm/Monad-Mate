@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-const SITE_URL = "https://monad-mate-landing-production.up.railway.app";
+const SITE_URL = "http://localhost:9999";
 
 export const metadata: Metadata = {
   title: "Monad Mate — Skin in the Game Social on Monad",
@@ -59,7 +59,7 @@ const jsonLd = [
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Monad Mate",
-    "url": "https://monad-mate-landing-production.up.railway.app",
+    "url": "http://localhost:9999",
     "description": "Stake MON to DM, match, and meet. No-shows get slashed on Monad.",
   },
   {
@@ -69,7 +69,7 @@ const jsonLd = [
     "applicationCategory": "SocialNetworkingApplication",
     "operatingSystem": "Web, iOS, Android",
     "description": "Trust-based social dApp on Monad. Stake MON to DM, match, and meet. No-shows get slashed. AI matchmaking powered by AINative.",
-    "url": "https://monad-mate-landing-production.up.railway.app",
+    "url": SITE_URL,
     "softwareVersion": "0.1.0",
     "offers": {
       "@type": "Offer",

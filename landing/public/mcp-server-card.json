@@ -2,7 +2,7 @@
   "name": "Monad Mate SDK Tools",
   "description": "Open source Python packages for integrating Monad Mate stake mechanics, reputation, and x402 payments into your app or agent.",
   "version": "0.1.0",
-  "homepage": "https://monad-mate-landing-production.up.railway.app",
+  "homepage": "http://localhost:9999",
   "repository": "https://github.com/HankGrimm/monad-mate-trust-api",
   "packages": [
     {
@@ -28,9 +28,9 @@
     }
   ],
   "api": {
-    "base_url": "https://monad-mate-trust-api-production.up.railway.app",
-    "docs": "https://monad-mate-trust-api-production.up.railway.app/docs",
-    "openapi": "https://monad-mate-landing-production.up.railway.app/openapi.json"
+    "base_url": "http://localhost:9999/api",
+    "docs": "http://localhost:9999/api/docs",
+    "openapi": "http://localhost:9999/openapi.json"
   },
   "free_tier": true,
   "hackathon": "EasyA x Consensus Miami 2026"

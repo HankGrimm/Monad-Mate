@@ -13,9 +13,9 @@ Monad Mate is a trust-based social dApp built on Monad for the EasyA × Consensu
 - Coinbase x402: HTTP-native USDC payments on Base
 
 ## API
-Base URL: https://monad-mate-trust-api-production.up.railway.app
-Docs: https://monad-mate-trust-api-production.up.railway.app/docs
-OpenAPI: https://monad-mate-landing-production.up.railway.app/openapi.json
+Base URL: http://localhost:9999/api
+Docs: http://localhost:9999/api/docs
+OpenAPI: http://localhost:9999/openapi.json
 
 ## Key Endpoints
 - POST /api/v1/auth/wallet/connect — wallet auth (challenge → signature → JWT)

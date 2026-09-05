@@ -22,7 +22,7 @@ Monad Mate is a trust-based social dApp on Monad. Stake MON to DM, match, and me
 
 ## API Base
 ```
-https://monad-mate-trust-api-production.up.railway.app
+http://localhost:9999/api
 ```
 
 ## Authentication

@@ -1,13 +1,13 @@
 # Monad Mate — Agent Manifest
-# https://monad-mate-landing-production.up.railway.app
+# http://localhost:9999
 # Updated: 2026-05-06
 
 ## IDENTITY
 Name: Monad Mate
 Type: Social dApp — Monad / Web3
 Tagline: Stake MON to DM, match, and meet. No-shows get slashed.
-API Base: https://monad-mate-trust-api-production.up.railway.app
-Docs: https://monad-mate-trust-api-production.up.railway.app/docs
+API Base: http://localhost:9999/api
+Docs: http://localhost:9999/api/docs
 Hackathon: EasyA x Consensus Miami 2026
 Built by: HankGrimm (https://github.com/HankGrimm)
 

@@ -14,8 +14,8 @@ Built for the **EasyA × Consensus Miami Hackathon 2026** by HankGrimm.
 
 ## API
 
-Base URL: https://monad-mate-trust-api-production.up.railway.app
-Docs: https://monad-mate-trust-api-production.up.railway.app/docs
+Base URL: http://localhost:9999/api
+Docs: http://localhost:9999/api/docs
 
 ## Open Source
 

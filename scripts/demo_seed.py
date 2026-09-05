@@ -446,8 +446,8 @@ def main():
     parser = argparse.ArgumentParser(description="Monad Mate demo seed script")
     parser.add_argument(
         "--base-url",
-        default="https://monad-mate-trust-api-production.up.railway.app",
-        help="Monad Mate API base URL (default: live Railway deployment)",
+        default="http://localhost:9998",
+        help="Monad Mate API base URL (default: local Docker deployment)",
     )
     parser.add_argument(
         "--output-json",
