@@ -1,15 +1,15 @@
 """
-AINative LLM & Embedding Service — Monad Mate
+LLM & Embedding Service — Monad Mate
 
-Routes AI inference through AINative Studio's serverless API:
-  - OpenAI-compatible chat completions for intro generation
-  - ZeroDB /zerodb/embed for real 768-dim BAAI/bge embeddings
-  - ZeroDB /zerodb/vectors/search for semantic similarity search
+AI inference routes to local model services (no cloud keys needed):
+  - Ollama /api/chat (deepseek-r1:32b) for intro / meetup-plan generation
+  - Xinference /v1/embeddings (bge-large-zh-v1.5, 1024-dim) for semantic vectors
 
-Falls back gracefully when AINATIVE_API_KEY is not set.
+ZeroDB vector search (optional cloud) still goes through AINative when
+AINATIVE_API_KEY is set; falls back gracefully otherwise.
 
-Base URL: https://api.ainative.studio
-Auth:     X-API-Key: <AINATIVE_API_KEY>
+Ollama:  host=127.0.0.1:11434, container=http://host.docker.internal:11434
+Embed:   host=127.0.0.1:9997,  container=http://host.docker.internal:9997
 """
 from __future__ import annotations
 
@@ -22,7 +22,13 @@ import httpx
 logger = logging.getLogger(__name__)
 
 _BASE = os.getenv("AINATIVE_API_URL", "https://api.ainative.studio")
-_EMBEDDING_DIM = 768  # BAAI/bge-base-en-v1.5
+# 172.20.0.1 = Hackathon_network 网关（宿主机服务）；本机 compose environment
+# 新增键注入不可靠，此处默认值即容器内实际值。裸跑时 env 覆盖为 127.0.0.1。
+_OLLAMA_BASE = os.getenv("OLLAMA_BASE_URL", "http://172.20.0.1:11434")
+_OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1:32b")
+_EMBED_BASE = os.getenv("EMBEDDINGS_BASE_URL", "http://172.20.0.1:9997")
+_EMBED_MODEL = os.getenv("EMBEDDINGS_MODEL", "bge-large-zh-v1.5")
+_EMBEDDING_DIM = int(os.getenv("EMBEDDING_DIM", "1024"))  # bge-large-zh-v1.5
 
 
 def _api_key() -> Optional[str]:
@@ -41,6 +47,40 @@ def _is_configured() -> bool:
     return bool(_api_key())
 
 
+def _ollama_chat(
+    messages: list[dict],
+    *,
+    temperature: float = 0.6,
+    timeout: float = 180.0,
+) -> Optional[str]:
+    """Call the local Ollama chat API (non-streaming, native /api/chat format).
+
+    deepseek-r1 returns a `thinking` field alongside `content`; only the final
+    `content` is used. Returns None on any failure so callers can fall back.
+    """
+    try:
+        resp = httpx.post(
+            f"{_OLLAMA_BASE}/api/chat",
+            json={
+                "model": _OLLAMA_MODEL,
+                "messages": messages,
+                "stream": False,
+                "options": {"temperature": temperature, "num_ctx": 30000},
+            },
+            timeout=timeout,
+        )
+        if resp.status_code == 200:
+            content = ((resp.json().get("message") or {}).get("content") or "").strip()
+            if content:
+                return content
+            logger.warning("Ollama returned empty content")
+        else:
+            logger.warning("Ollama HTTP %s: %s", resp.status_code, resp.text[:80])
+    except Exception as exc:
+        logger.warning("Ollama error: %s", exc)
+    return None
+
+
 # ---------------------------------------------------------------------------
 # LLM: intro generation
 # ---------------------------------------------------------------------------
@@ -54,12 +94,9 @@ def generate_match_intro(
     context: Optional[str] = None,
 ) -> str:
     """
-    Generate a personalised opening message via AINative LLM (llama-3.3-70b).
-    Falls back to a deterministic template if the API is unavailable.
+    Generate a personalised opening message via the local Ollama LLM
+    (deepseek-r1:32b). Falls back to a deterministic template on failure.
     """
-    if not _is_configured():
-        return _fallback_intro(requester_name, target_name, shared_interests, context)
-
     interest_str = ", ".join(shared_interests[:5]) if shared_interests else "similar vibes"
     intent_hint = f" (intent: {requester_intent})" if requester_intent else ""
     context_hint = f"\nExtra context from requester: {context}" if context else ""
@@ -74,27 +111,17 @@ def generate_match_intro(
         f"Write an opening DM from {requester_name} to {target_name}."
     )
 
-    try:
-        resp = httpx.post(
-            f"{_BASE}/api/v1/chat/completions",
-            json={
-                "model": "llama-3.3-70b",
-                "max_tokens": 120,
-                "temperature": 0.75,
-                "messages": [{"role": "user", "content": user_prompt}],
-                "system": system,
-            },
-            headers=_headers(),
-            timeout=12,
-        )
-        if resp.status_code == 200:
-            content = resp.json()["choices"][0]["message"]["content"].strip()
-            logger.info("AINative LLM generated intro (%d chars)", len(content))
-            return content
-        else:
-            logger.warning("AINative LLM HTTP %s: %s", resp.status_code, resp.text[:80])
-    except Exception as exc:
-        logger.warning("AINative LLM error: %s", exc)
+    content = _ollama_chat(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.6,
+        timeout=180,
+    )
+    if content:
+        logger.info("Local LLM generated intro (%d chars)", len(content))
+        return content
 
     return _fallback_intro(requester_name, target_name, shared_interests, context)
 
@@ -122,69 +149,48 @@ def generate_plan_completion(*, system: str, user_prompt: str) -> Optional[str]:
     """Raw chat completion used by the meetup plan generator.
 
     Returns the model's text, or None on any failure so the caller can fall back
-    to a deterministic template. Temperature is kept low because the output must
-    parse as JSON.
+    to a deterministic template. deepseek-r1 推理较慢，超时给足 300s。
     """
-    if not _is_configured():
-        return None
-
-    try:
-        resp = httpx.post(
-            f"{_BASE}/api/v1/chat/completions",
-            json={
-                "model": "llama-3.3-70b",
-                "max_tokens": 700,
-                "temperature": 0.4,
-                "messages": [{"role": "user", "content": user_prompt}],
-                "system": system,
-            },
-            headers=_headers(),
-            timeout=20,
-        )
-        if resp.status_code == 200:
-            content = resp.json()["choices"][0]["message"]["content"].strip()
-            logger.info("AINative generated meetup plan (%d chars)", len(content))
-            return content
-        logger.warning("AINative plan HTTP %s: %s", resp.status_code, resp.text[:80])
-    except Exception as exc:
-        logger.warning("AINative plan error: %s", exc)
-
+    content = _ollama_chat(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.6,
+        timeout=300,
+    )
+    if content:
+        logger.info("Local LLM generated meetup plan (%d chars)", len(content))
+        return content
     return None
 
 
 # ---------------------------------------------------------------------------
-# Embeddings: real 768-dim vectors via AINative ZeroDB
+# Embeddings: 1024-dim vectors via local Xinference (bge-large-zh-v1.5)
 # ---------------------------------------------------------------------------
 
 def embed_text(text: str) -> list[float]:
     """
-    Generate a 768-dim BAAI/bge-base-en-v1.5 embedding via AINative /zerodb/embed.
+    Generate a 1024-dim bge-large-zh-v1.5 embedding via the local Xinference
+    service (OpenAI-compatible /v1/embeddings).
     Returns a zero vector on failure (safe for cosine similarity — treated as no-match).
     """
-    if not _is_configured():
-        logger.debug("AINative not configured — returning zero embedding")
-        return [0.0] * _EMBEDDING_DIM
-
     try:
         resp = httpx.post(
-            f"{_BASE}/zerodb/embed",
-            json={"texts": [text]},
-            headers=_headers(),
-            timeout=10,
+            f"{_EMBED_BASE}/v1/embeddings",
+            json={"model": _EMBED_MODEL, "input": [text]},
+            timeout=15,
         )
         if resp.status_code == 200:
-            data = resp.json()
-            # Response: {"embeddings": [[...768 floats...]]}
-            embeddings = data.get("embeddings") or data.get("data", [])
-            if embeddings and len(embeddings) > 0:
-                vec = embeddings[0]
-                if isinstance(vec, dict):
-                    vec = vec.get("embedding", [])
-                logger.debug("AINative embed: %d-dim vector", len(vec))
-                return vec
-        logger.warning("AINative embed HTTP %s: %s", resp.status_code, resp.text[:80])
+            data = resp.json().get("data", [])
+            if data:
+                vec = data[0].get("embedding") or []
+                if vec:
+                    logger.debug("local embed: %d-dim vector", len(vec))
+                    return vec
+        logger.warning("embed HTTP %s: %s", resp.status_code, resp.text[:80])
     except Exception as exc:
-        logger.warning("AINative embed error: %s", exc)
+        logger.warning("embed error: %s", exc)
 
     return [0.0] * _EMBEDDING_DIM
 

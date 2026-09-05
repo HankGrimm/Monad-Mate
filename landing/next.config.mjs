@@ -33,6 +33,10 @@ const nextConfig = {
         source: "/api/:path*",
         destination: "http://api:9999/:path*",
       },
+      {
+        source: "/app/:path*",
+        destination: "http://app:3001/app/:path*",
+      },
     ];
   },
 };

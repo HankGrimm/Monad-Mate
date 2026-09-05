@@ -2,6 +2,9 @@
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  // 挂在 landing 的 /app 路由下（经 rewrites 转发），资源/路由自动带 /app 前缀，
+  // 避免与 landing 的 /_next 静态资源冲突
+  basePath: "/app",
   images: {
     unoptimized: true,
   },

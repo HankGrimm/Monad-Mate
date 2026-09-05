@@ -9,11 +9,12 @@ AiBuddy/Monad Mate 项目的完整 Docker 部署运维知识。
 
 ## 架构总览
 
-集群名 `hackathon`，定义于 `backend/docker-compose.yml`，6 个容器统一 `Hackathon_` 前缀命名，共享网络 `Hackathon_network`：
+集群名 `hackathon`，定义于 `backend/docker-compose.yml`，7 个容器统一 `Hackathon_` 前缀命名，共享网络 `Hackathon_network`：
 
 | 容器 | 镜像 | 宿主机端口 | 用途 |
 |---|---|---|---|
-| Hackathon_landing | hackathon-landing:latest | **9999** → 3000 | Next.js 前端（含 /api 反向代理） |
+| Hackathon_landing | hackathon-landing:latest | **9999** → 3000 | Next.js 营销页（含 /api、/app 反向代理，唯一公网出口） |
+| Hackathon_app | hackathon-app:latest | 无 | Next.js 应用界面（登录/匹配/打卡等，basePath=/app，容器内 3001） |
 | Hackathon_api | hackathon-aibuddy:latest | **9998** → 9999 | FastAPI 后端（直连调试口） |
 | Hackathon_worker | hackathon-aibuddy:latest | 无 | Celery worker |
 | Hackathon_beat | hackathon-aibuddy:latest | 无 | Celery 定时任务 |
@@ -22,10 +23,13 @@ AiBuddy/Monad Mate 项目的完整 Docker 部署运维知识。
 
 ## 端口与路由约定（关键）
 
-- `http://localhost:9999` — 前端页面；`/api/*` 由 Next.js rewrites 转发到容器内网 `http://api:9999/*`（浏览器全程只碰 9999）
+- `http://localhost:9999` — 营销页（唯一出口）；`/api/*` → 容器内网 `http://api:9999/*`；`/app/*` → `http://app:3001/app/*`（浏览器全程只碰 9999）
+- `http://localhost:9999/app` — 应用界面（登录/匹配/打卡），app 用 `basePath: '/app'` 避免与 landing 的 `/_next/` 资源冲突
+- app 页面内 `fetch('/api/v1/...')` 相对路径 → 浏览器请求 9999/api/v1/* → landing 转发 → 后端 /v1/*（后端业务路由前缀是 /v1，不带 /api）
 - `http://localhost:9999/api/docs` — Swagger 文档（经代理）
 - `http://localhost:9998/docs` — Swagger 文档（后端直连，Postman/curl 用）
 - 前端组件中 API_URL 必须用相对路径 `"/api"`，禁止写死 localhost/IP
+- Next.js standalone 容器必须显式 `ENV PORT=xxx`，否则 server.js 默认监听 3000（app 踩过此坑）
 
 ## 关键配置文件
 
@@ -63,6 +67,9 @@ DOCKER_BUILDKIT=0 docker build -t hackathon-aibuddy:latest /home/xzh/Hackathon/A
 
 # 前端镜像
 DOCKER_BUILDKIT=0 docker build -t hackathon-landing:latest /home/xzh/Hackathon/AiBuddy/landing
+
+# 应用界面镜像（app/，登录/匹配/打卡）
+DOCKER_BUILDKIT=0 docker build -t hackathon-app:latest /home/xzh/Hackathon/AiBuddy/app
 
 # 应用重启
 cd /home/xzh/Hackathon/AiBuddy/backend && docker compose up -d
@@ -108,6 +115,26 @@ docker exec Hackathon_api python scripts/demo_seed.py --base-url http://localhos
 | 代理后 /api/docs 打不开或空白 | api 启动命令缺 `--root-path=/api` |
 | 前端按钮跳转到错误地址 | 组件里 API_URL 写死了绝对地址，改回 `"/api"` |
 | 改了 .env 不生效 | `docker compose up -d` 重建容器（不是 restart） |
+
+## 本地模型服务（LLM + embeddings，2026-09-05 接入）
+
+| 服务 | 地址（容器内视角） | 用途 |
+|---|---|---|
+| Ollama deepseek-r1:32b | http://172.20.0.1:11434（宿主机 127.0.0.1:11434） | 匹配介绍生成、meetup 计划生成（generate_match_intro / generate_plan_completion，经 _ollama_chat helper） |
+| Xinference bge-large-zh-v1.5 | http://172.20.0.1:9997（宿主机 127.0.0.1:9997） | 语义向量（/v1/embeddings，OpenAI 兼容，1024 维） |
+
+- 172.20.0.1 = Hackathon_network 网关（容器访问宿主机服务）；网关变了查：`docker network inspect Hackathon_network | grep Gateway`
+- 默认值内建在 backend/app/core/config.py 和 ainative_service.py（因为本环境 compose 的 environment 新增键注入不可靠，见下）
+- embeddings 维度 1024（bge-large-zh-v1.5），preference_memory_service 存 JSON 列无需迁移；cosine 对维度不等安全返回 0
+- 两个 .env 分工：根 `.env` = 本地服务全局配置（OLLAMA_*/EMBEDDINGS_* 等）；`backend/.env` = 后端合约配置（Monad 合约/私钥/阈值），compose 实际加载的是 backend/.env（env_file: .env）
+- LLM 推理耗时：deepseek-r1:32b 单次生成约 15s（intro）/更久（plan），超时设 180s/300s
+- 中断恢复注意：曾发生过编辑被部分回退（generate_match_intro/generate_plan_completion 变回 AINative 旧版），改完代码后建议 grep 确认关键改动还在再构建
+
+| 症状 | 原因/解决 |
+|---|---|
+| compose env_file 用列表形式不生效 | 本环境只支持单字符串 `env_file: .env`，列表被静默忽略 |
+| compose environment 新增键不进容器（老键正常） | 本环境已知怪癖，force-recreate/删容器重建均无效；新增配置只能写进代码默认值（config.py）或 backend/.env |
+| host.docker.internal 不解析 | extra_hosts 在本环境无效；用网关 IP 172.20.0.1 直连 |
 
 ## 技术栈备忘
 

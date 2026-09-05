@@ -63,9 +63,7 @@ export default function Download() {
               experience.
             </p>
             <a
-              href={API_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/app"
               className="mt-auto w-full py-3 rounded-xl border border-brand-violet/50 text-white/80 font-semibold text-sm text-center hover:border-brand-violet hover:text-white transition-all"
             >
               Open on Mobile →

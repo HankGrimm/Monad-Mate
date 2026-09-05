@@ -56,9 +56,21 @@ class Settings(BaseSettings):
     AINATIVE_API_URL: str = "https://api.ainative.studio"
     AINATIVE_API_KEY: Optional[str] = None  # sk_... from ainative.studio
 
-    # Legacy / direct keys (unused — routed through AINative gateway instead)
+    # Legacy / direct keys (unused — routed through local model services instead)
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
+
+    # Local model services (no cloud keys needed)
+    # 172.20.0.1 = Hackathon_network 网关（容器访问宿主机上的 Ollama/Xinference）。
+    # 网关变了查：docker network inspect Hackathon_network | grep Gateway
+    # 宿主机裸跑后端时用环境变量覆盖为 127.0.0.1。
+    # 注：本机 compose 的 environment 新增键注入不可靠，故直接内建默认值。
+    OLLAMA_BASE_URL: str = "http://172.20.0.1:11434"
+    OLLAMA_MODEL: str = "deepseek-r1:32b"
+    # Xinference embeddings (OpenAI-compatible /v1/embeddings), bge-large-zh-v1.5
+    EMBEDDINGS_BASE_URL: str = "http://172.20.0.1:9997"
+    EMBEDDINGS_MODEL: str = "bge-large-zh-v1.5"
+    EMBEDDING_DIM: int = 1024
 
     # Coinbase x402 payment protocol (Base)
     X402_ENABLED: bool = False

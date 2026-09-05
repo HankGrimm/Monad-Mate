@@ -52,11 +52,16 @@ services:
   worker:
     image: hackathon-aibuddy:latest
     container_name: Hackathon_worker
-    command: celery -A app.tasks.celery_app worker --loglevel=info
+    command: celery -A app.tasks.celery_app beat --loglevel=info
     env_file: .env
     environment:
       DATABASE_URL: postgresql://monadmate:monadmate@db:5432/monadmate
       REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://172.20.0.1:11434
+      OLLAMA_MODEL: deepseek-r1:32b
+      EMBEDDINGS_BASE_URL: http://172.20.0.1:9997
+      EMBEDDINGS_MODEL: bge-large-zh-v1.5
+      EMBEDDING_DIM: "1024"
     depends_on:
       db:
         condition: service_healthy
@@ -72,6 +77,11 @@ services:
     environment:
       DATABASE_URL: postgresql://monadmate:monadmate@db:5432/monadmate
       REDIS_URL: redis://redis:6379/0
+      OLLAMA_BASE_URL: http://172.20.0.1:11434
+      OLLAMA_MODEL: deepseek-r1:32b
+      EMBEDDINGS_BASE_URL: http://172.20.0.1:9997
+      EMBEDDINGS_MODEL: bge-large-zh-v1.5
+      EMBEDDING_DIM: "1024"
     depends_on:
       db:
         condition: service_healthy
@@ -87,6 +97,16 @@ services:
     container_name: Hackathon_landing
     ports:
       - "9999:3000"
+    restart: unless-stopped
+
+  app:
+    build:
+      context: ../app
+      dockerfile: Dockerfile
+    image: hackathon-app:latest
+    container_name: Hackathon_app
+    environment:
+      BACKEND_ORIGIN: http://api:9999
     restart: unless-stopped
 
 networks:

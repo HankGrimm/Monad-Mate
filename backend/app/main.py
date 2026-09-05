@@ -12,7 +12,8 @@ from .models import *  # noqa
 from .api import (
     users, personas, rooms, stakes, matches,
     attestations, social_reputation, safety, match_agent,
-    nfts, transfers, meetups, credentials, wallet, verification,
+    nfts, transfers,
+    wallet, credentials, verification, meetups,
 )
 
 

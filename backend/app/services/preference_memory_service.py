@@ -161,16 +161,14 @@ class PreferenceMemoryService:
 
     def compute_embedding(self, prefs: dict) -> list[float]:
         """
-        Compute preference embedding.
-        - AINative configured: 768-dim BAAI/bge semantic vector (16ms, free tier)
-        - Fallback: 45-dim bag-of-words keyword vector (zero dependencies)
+        Compute a normalised 1024-dim semantic embedding via the local
+        embeddings service (bge-large-zh-v1.5).
         """
-        if _ainative_configured():
-            return embed_preferences(
-                interests=prefs.get("interests") or [],
-                personality_traits=prefs.get("personality_traits") or [],
-            )
-        return _bow_embedding(prefs)
+        vec = embed_preferences(
+            interests=prefs.get("interests") or [],
+            personality_traits=prefs.get("personality_traits") or [],
+        )
+        return _normalise(vec)
 
     @staticmethod
     def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:

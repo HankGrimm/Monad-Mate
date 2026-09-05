@@ -49,7 +49,7 @@ export default function Hero() {
       {/* Primary CTAs */}
       <div className="relative flex flex-col sm:flex-row items-center gap-4 mb-16">
         <a
-          href="#download"
+          href="/app"
           className="px-8 py-4 rounded-full bg-cta-gradient text-white font-semibold text-lg hover:opacity-90 transition-opacity glow-violet"
         >
           Get the App →

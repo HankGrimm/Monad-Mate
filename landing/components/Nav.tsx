@@ -70,7 +70,7 @@ export default function Nav() {
             GitHub
           </a>
           <a
-            href="#download"
+            href="/app"
             className="text-sm px-4 py-2 rounded-full bg-cta-gradient text-white font-medium hover:opacity-90 transition-opacity"
           >
             Get the App
