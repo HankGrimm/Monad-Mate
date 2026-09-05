@@ -1,17 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useLang } from "@/lib/i18n";
 
-const NAV_LINKS = [
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Features", href: "#features" },
-  { label: "Tech Stack", href: "#tech-stack" },
-  { label: "Open Source", href: "#open-source" },
-];
+const NAV_HREFS = ["#how-it-works", "#features", "#tech-stack", "#open-source"];
 
 const API_URL = "/api";
 const GITHUB_URL = "https://github.com/HankGrimm/monad-mate-trust-api";
 
 export default function Nav() {
+  const { lang, setLang, d } = useLang();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -20,6 +17,8 @@ export default function Nav() {
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
+
+  const toggleLang = () => setLang(lang === "en" ? "zh" : "en");
 
   return (
     <nav
@@ -33,33 +32,47 @@ export default function Nav() {
         {/* Logo */}
         <a href="#" className="flex items-center gap-2">
           <span className="text-2xl">💜</span>
-          <span className="font-bold text-lg tracking-tight">
-            Monad<span className="text-gradient">Mate</span>
-          </span>
+          {lang === "zh" ? (
+            <span className="font-bold text-lg tracking-tight">
+              你<span className="text-gradient">鸽了吗</span>
+            </span>
+          ) : (
+            <span className="font-bold text-lg tracking-tight">
+              Monad<span className="text-gradient">Mate</span>
+            </span>
+          )}
         </a>
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8">
-          {NAV_LINKS.map((l) => (
+          {d.nav.links.map((label, i) => (
             <a
-              key={l.href}
-              href={l.href}
+              key={NAV_HREFS[i]}
+              href={NAV_HREFS[i]}
               className="text-sm text-white/60 hover:text-white transition-colors"
             >
-              {l.label}
+              {label}
             </a>
           ))}
         </div>
 
         {/* CTA buttons */}
         <div className="hidden md:flex items-center gap-3">
+          {/* Language toggle */}
+          <button
+            onClick={toggleLang}
+            className="text-xs px-3 py-2 rounded-full border border-white/20 text-white/70 hover:text-white hover:border-white/40 transition-all font-semibold tracking-wide"
+            aria-label="Toggle language / 切换语言"
+          >
+            {lang === "en" ? "中文" : "EN"}
+          </button>
           <a
             href={API_URL + "/docs"}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-white/60 hover:text-white transition-colors"
           >
-            API Docs
+            {d.nav.apiDocs}
           </a>
           <a
             href={GITHUB_URL}
@@ -73,7 +86,7 @@ export default function Nav() {
             href="/app"
             className="text-sm px-4 py-2 rounded-full bg-cta-gradient text-white font-medium hover:opacity-90 transition-opacity"
           >
-            Get the App
+            {d.nav.getTheApp}
           </a>
         </div>
 
@@ -102,22 +115,28 @@ export default function Nav() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden bg-brand-card/95 backdrop-blur-md border-t border-brand-border px-6 py-4 flex flex-col gap-4">
-          {NAV_LINKS.map((l) => (
+          <button
+            onClick={toggleLang}
+            className="text-sm px-4 py-2 rounded-full border border-white/20 text-white/80 self-start font-semibold"
+          >
+            {lang === "en" ? "切换中文" : "Switch to EN"}
+          </button>
+          {d.nav.links.map((label, i) => (
             <a
-              key={l.href}
-              href={l.href}
+              key={NAV_HREFS[i]}
+              href={NAV_HREFS[i]}
               onClick={() => setMenuOpen(false)}
               className="text-white/70 hover:text-white transition-colors"
             >
-              {l.label}
+              {label}
             </a>
           ))}
           <a
-            href="#download"
+            href="/app"
             onClick={() => setMenuOpen(false)}
             className="px-4 py-2 rounded-full bg-cta-gradient text-white font-medium text-center"
           >
-            Get the App
+            {d.nav.getTheApp}
           </a>
         </div>
       )}

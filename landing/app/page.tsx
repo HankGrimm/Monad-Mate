@@ -6,18 +6,21 @@ import TechStack from "@/components/TechStack";
 import Download from "@/components/Download";
 import OpenSource from "@/components/OpenSource";
 import Footer from "@/components/Footer";
+import { LangProvider } from "@/lib/i18n";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-brand-dark text-white overflow-x-hidden">
-      <Nav />
-      <Hero />
-      <HowItWorks />
-      <Features />
-      <TechStack />
-      <Download />
-      <OpenSource />
-      <Footer />
+      <LangProvider>
+        <Nav />
+        <Hero />
+        <HowItWorks />
+        <Features />
+        <TechStack />
+        <Download />
+        <OpenSource />
+        <Footer />
+      </LangProvider>
     </main>
   );
 }

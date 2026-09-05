@@ -115,6 +115,7 @@ docker exec Hackathon_api python scripts/demo_seed.py --base-url http://localhos
 | 代理后 /api/docs 打不开或空白 | api 启动命令缺 `--root-path=/api` |
 | 前端按钮跳转到错误地址 | 组件里 API_URL 写死了绝对地址，改回 `"/api"` |
 | 改了 .env 不生效 | `docker compose up -d` 重建容器（不是 restart） |
+| 拉新代码后接口 500 `column xxx does not exist` | 模型加了新列但旧表不会自动加列（create_all 只建新表）。演示库清空重建：`docker exec Hackathon_db psql -U monadmate -d monadmate -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"` 然后 `docker restart Hackathon_api`。有数据则需写 Alembic 迁移 |
 
 ## 本地模型服务（LLM + embeddings，2026-09-05 接入）
 
