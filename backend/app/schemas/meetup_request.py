@@ -91,6 +91,12 @@ class MeetupMatchDecision(BaseModel):
     accept: bool = Field(..., description="True to accept, False to pass (no penalty).")
 
 
+class CounterpartReport(BaseModel):
+    """Report the other party of a match. No user id needed — the backend resolves it."""
+    report_type: str = Field(..., max_length=32)
+    description: str = Field(..., min_length=10, max_length=2000)
+
+
 class MeetupCounterpart(BaseModel):
     """Only what a participant may see about the other side."""
     display_name: Optional[str] = None

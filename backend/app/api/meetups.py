@@ -11,11 +11,13 @@ from ..core.database import get_db
 from ..models.user import User
 from ..schemas.meetup_plan import MeetupPlanResponse
 from ..schemas.meetup_request import (
-    MeetupCandidate, MeetupMatchDecision, MeetupMatchDetail, MeetupMatchResponse,
-    MeetupRequestCreate, MeetupRequestResponse,
+    CounterpartReport, MeetupCandidate, MeetupMatchDecision, MeetupMatchDetail,
+    MeetupMatchResponse, MeetupRequestCreate, MeetupRequestResponse,
 )
+from ..schemas.safety import ReportCreate
 from ..services.meetup_plan_service import MeetupPlanService
 from ..services.meetup_request_service import MeetupRequestService
+from ..services.report_service import ReportService
 
 router = APIRouter(prefix="/v1/meetups", tags=["meetups"])
 
@@ -157,3 +159,43 @@ async def adopt_plan(
 ):
     """Mark the plan as the one you're using — feeds the adoption-rate metric."""
     return MeetupPlanService(db).mark_adopted(current_user, match_id)
+
+
+@router.post("/matches/{match_id}/report", status_code=201)
+async def report_counterpart(
+    match_id: UUID,
+    payload: CounterpartReport,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """File a report against the other party of a match.
+
+    The caller never needs the counterpart's user id — the backend resolves it
+    from the match. This keeps the API surface privacy-safe while still letting
+    a participant act on a bad experience.
+    """
+    svc = MeetupRequestService(db)
+    match = svc.get_match(current_user, match_id)
+
+    own_request_id = svc._side_of(match, current_user.id)
+    other_request_id = (
+        match.counterpart_request_id
+        if own_request_id == match.request_id
+        else match.request_id
+    )
+    other = svc.get_or_404(other_request_id)
+
+    report_svc = ReportService(db)
+    report = report_svc.create(
+        current_user.id,
+        ReportCreate(
+            reported_user_id=other.user_id,
+            report_type=payload.report_type,
+            description=payload.description,
+        ),
+    )
+    return {
+        "id": str(report.id),
+        "status": report.status.value,
+        "message": "Report filed. It will be reviewed before any action is taken.",
+    }

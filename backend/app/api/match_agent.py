@@ -75,6 +75,40 @@ async def update_preferences(
     return svc.update_preferences(current_user, payload.model_dump(exclude_none=True))
 
 
+@router.get("/preferences")
+async def get_preferences(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Read the caller's preference profile — the R2 matching dimensions."""
+    from ..models.match_agent import UserPreferences
+
+    prefs = (
+        db.query(UserPreferences)
+        .filter(UserPreferences.user_id == current_user.id)
+        .first()
+    )
+    if not prefs:
+        return None
+
+    return {
+        "user_id": str(prefs.user_id),
+        "intent_mode": prefs.intent_mode,
+        "age_range_min": prefs.age_range_min,
+        "age_range_max": prefs.age_range_max,
+        "location_range_km": prefs.location_range_km,
+        "birth_date": prefs.birth_date.isoformat() if prefs.birth_date else None,
+        "mbti": prefs.mbti,
+        "sleep_schedule": prefs.sleep_schedule,
+        "occupation": prefs.occupation,
+        "industry": prefs.industry,
+        "education": prefs.education,
+        "city": prefs.city,
+        "interests": prefs.interests or [],
+        "personality_traits": prefs.personality_traits or [],
+    }
+
+
 @router.get("/suggestions", response_model=List[MatchSuggestion])
 async def get_suggestions(
     room_id: Optional[UUID] = None,

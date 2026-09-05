@@ -210,6 +210,24 @@ function Profile({ user }: { user: User }) {
           </span>
 
           <div className="overflow-hidden rounded-lg bg-surface-container shadow-float">
+            <Link
+              href="/preferences"
+              className="flex w-full items-center justify-between p-space-md text-left transition-colors active:bg-surface-container-highest"
+            >
+              <span className="flex items-center gap-space-sm">
+                <SettingIcon icon="auto_awesome" tone="text-primary" />
+                <span className="flex flex-col">
+                  <span className="text-label-lg text-on-surface">
+                    Matching preferences
+                  </span>
+                  <span className="text-body-sm text-on-surface-variant">
+                    Star sign, MBTI, interests and background
+                  </span>
+                </span>
+              </span>
+              <Icon name="chevron_right" size={22} className="text-outline" />
+            </Link>
+
             <button
               type="button"
               onClick={() => setGenderOpen((o) => !o)}

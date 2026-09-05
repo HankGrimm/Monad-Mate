@@ -155,6 +155,43 @@ export const users = {
 };
 
 // ---------------------------------------------------------------------------
+// Preferences (R2 matching dimensions)
+// ---------------------------------------------------------------------------
+
+export interface PreferencesPayload {
+  birth_date?: string;
+  mbti?: string;
+  sleep_schedule?: string;
+  occupation?: string;
+  industry?: string;
+  education?: string;
+  city?: string;
+  interests?: string[];
+  personality_traits?: string[];
+}
+
+export interface PreferencesResponse extends PreferencesPayload {
+  user_id: string;
+  intent_mode: string | null;
+  age_range_min: number | null;
+  age_range_max: number | null;
+  location_range_km: number | null;
+}
+
+export const preferences = {
+  get() {
+    return request<PreferencesResponse | null>("/ai/match-agent/preferences");
+  },
+
+  update(payload: PreferencesPayload) {
+    return request<{ status: string }>("/ai/match-agent/preferences", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Meetups (R1 / R10 / R11)
 // ---------------------------------------------------------------------------
 
@@ -225,6 +262,17 @@ export const meetups = {
       method: "POST",
     });
   },
+
+  /** Report the other party — the backend resolves who from the match. */
+  reportCounterpart(
+    matchId: string,
+    payload: { report_type: string; description: string },
+  ) {
+    return request<{ id: string; status: string; message: string }>(
+      `/meetups/matches/${matchId}/report`,
+      { method: "POST", body: JSON.stringify(payload) },
+    );
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -232,10 +280,9 @@ export const meetups = {
 // ---------------------------------------------------------------------------
 
 export const stakes = {
-  requirements(amountMon: number) {
-    return request<DepositRequirements>(
-      `/stakes/deposit-requirements?amount_mon=${amountMon}`,
-    );
+  requirements(amountMon?: number) {
+    const query = amountMon !== undefined ? `?amount_mon=${amountMon}` : "";
+    return request<DepositRequirements>(`/stakes/deposit-requirements${query}`);
   },
 
   create(payload: {
