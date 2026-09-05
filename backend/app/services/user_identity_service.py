@@ -103,7 +103,12 @@ class UserIdentityService:
         self.db = db
 
     def create_challenge(self, wallet_address: str) -> WalletAuthChallenge:
-        nonce = secrets.token_hex(32)
+        # The nonce is prefixed so it never looks like a bare hex string.
+        # Wallets may interpret unprefixed hex-looking data as raw bytes to
+        # sign rather than UTF-8 text, which breaks signature recovery on the
+        # backend (text vs hexstr mismatch). A human-readable prefix makes the
+        # wallet always treat it as text and shows the user what they're signing.
+        nonce = f"MonadMate wallet verification: {secrets.token_hex(32)}"
         expires_at = datetime.utcnow() + timedelta(minutes=5)
         _nonce_store.set(wallet_address, nonce, expires_at)
         return WalletAuthChallenge(nonce=nonce, expires_at=expires_at)

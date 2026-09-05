@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AppHeader from "@/components/AppHeader";
 import Avatar from "@/components/Avatar";
@@ -118,9 +119,13 @@ function Profile({ user }: { user: User }) {
                 Identity verified
               </StatusChip>
             ) : (
-              <StatusChip tone="hot" icon="badge">
-                Not verified yet
-              </StatusChip>
+              <Link
+                href="/verification"
+                className="inline-flex items-center gap-space-2xs rounded-full bg-secondary-container/25 border border-secondary/30 px-space-sm py-space-2xs text-label-status uppercase text-secondary transition-all active:scale-95"
+              >
+                <Icon name="badge" size={14} filled />
+                Not verified — tap to verify
+              </Link>
             )}
           </div>
         </div>
