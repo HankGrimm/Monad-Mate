@@ -356,6 +356,85 @@ class MeetupRequestService:
             .all()
         )
 
+    def get_match(self, user: User, match_id: UUID) -> MeetupRequestMatch:
+        """Fetch one pairing, but only for a participant."""
+        match = (
+            self.db.query(MeetupRequestMatch)
+            .filter(MeetupRequestMatch.id == match_id)
+            .first()
+        )
+        if not match:
+            raise HTTPException(404, "Match not found")
+        if self._side_of(match, user.id) is None:
+            raise HTTPException(403, "You are not part of this match")
+        return match
+
+    def match_detail(self, user: User, match_id: UUID) -> dict:
+        """Participant-facing view of a pairing.
+
+        Exposes only what the confirmation screen needs: the venue, scene and
+        window (identical for both sides), the counterpart's display name,
+        verification state and fulfilment count — never their user id, wallet
+        address or contact details.
+        """
+        match = self.get_match(user, match_id)
+        own_request_id = self._side_of(match, user.id)
+
+        own = self.get_or_404(own_request_id)
+        other_id = (
+            match.counterpart_request_id
+            if own_request_id == match.request_id
+            else match.request_id
+        )
+        other = self.get_or_404(other_id)
+        other_user = self.db.query(User).filter(User.id == other.user_id).first()
+
+        persona = (
+            self.db.query(Persona).filter(Persona.id == other.persona_id).first()
+            if other.persona_id
+            else None
+        )
+        profile = self._credit_profile(other.user_id) if other_user else None
+
+        you_accepted = (
+            match.requester_accepted
+            if own_request_id == match.request_id
+            else match.counterpart_accepted
+        )
+        they_accepted = (
+            match.counterpart_accepted
+            if own_request_id == match.request_id
+            else match.requester_accepted
+        )
+
+        return {
+            "id": str(match.id),
+            "status": match.status.value,
+            "score": match.score,
+            "reasons": match.reasons or [],
+            "you_accepted": you_accepted,
+            "they_accepted": they_accepted,
+            "confirmed_at": match.confirmed_at,
+            "own_request_id": str(own.id),
+            "venue_type": own.venue_type.value,
+            "venue_name": own.venue_name,
+            "scene": own.scene.value,
+            "window_start": own.window_start,
+            "window_end": own.window_end,
+            "party_size": own.party_size,
+            "counterpart": {
+                "display_name": persona.display_name if persona else None,
+                "verified": _is_verified(other_user) if other_user else False,
+                "fulfilled_count": profile.fulfilled_count if profile else 0,
+                "credit_score": (
+                    profile.credit_score
+                    if profile and profile.fulfilled_count >= 5
+                    else None
+                ),
+            },
+        }
+
+
     # ------------------------------------------------------------------
     # Internals
     # ------------------------------------------------------------------

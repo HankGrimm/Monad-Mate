@@ -89,3 +89,30 @@ class MeetupMatchResponse(BaseModel):
 
 class MeetupMatchDecision(BaseModel):
     accept: bool = Field(..., description="True to accept, False to pass (no penalty).")
+
+
+class MeetupCounterpart(BaseModel):
+    """Only what a participant may see about the other side."""
+    display_name: Optional[str] = None
+    verified: bool = False
+    fulfilled_count: int = 0
+    credit_score: Optional[float] = None
+
+
+class MeetupMatchDetail(BaseModel):
+    """Participant view of a pairing, used by the confirm/deposit screen."""
+    id: UUID
+    status: MeetupMatchStatus
+    score: float
+    reasons: List[str] = []
+    you_accepted: bool
+    they_accepted: bool
+    confirmed_at: Optional[datetime] = None
+    own_request_id: UUID
+    venue_type: VenueType
+    venue_name: str
+    scene: SceneType
+    window_start: datetime
+    window_end: datetime
+    party_size: int
+    counterpart: MeetupCounterpart

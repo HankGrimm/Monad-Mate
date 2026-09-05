@@ -14,6 +14,7 @@ import type {
   LoginCodeResponse,
   MeetupCandidate,
   MeetupMatch,
+  MeetupMatchDetail,
   MeetupRequest,
   MeetupRequestCreate,
   Stake,
@@ -190,6 +191,10 @@ export const meetups = {
 
   matches(requestId: string) {
     return request<MeetupMatch[]>(`/meetups/requests/${requestId}/matches`);
+  },
+
+  match(matchId: string) {
+    return request<MeetupMatchDetail>(`/meetups/matches/${matchId}`);
   },
 
   respond(matchId: string, accept: boolean) {

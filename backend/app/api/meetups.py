@@ -10,7 +10,7 @@ from ..core.auth import get_current_user
 from ..core.database import get_db
 from ..models.user import User
 from ..schemas.meetup_request import (
-    MeetupCandidate, MeetupMatchDecision, MeetupMatchResponse,
+    MeetupCandidate, MeetupMatchDecision, MeetupMatchDetail, MeetupMatchResponse,
     MeetupRequestCreate, MeetupRequestResponse,
 )
 from ..services.meetup_request_service import MeetupRequestService
@@ -95,6 +95,20 @@ async def list_matches(
     db: Session = Depends(get_db),
 ):
     return MeetupRequestService(db).list_matches(current_user, request_id)
+
+
+@router.get("/matches/{match_id}", response_model=MeetupMatchDetail)
+async def get_match(
+    match_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Participant view of a pairing.
+
+    Returns the shared meetup details plus the counterpart's display name,
+    verification state and fulfilment count — never their identifiers.
+    """
+    return MeetupRequestService(db).match_detail(current_user, match_id)
 
 
 @router.post("/matches/{match_id}/respond", response_model=MeetupMatchResponse)

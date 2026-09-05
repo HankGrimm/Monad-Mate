@@ -136,6 +136,32 @@ export interface MeetupMatch {
   confirmed_at: string | null;
 }
 
+/** What a participant may see about the other side — no identifiers. */
+export interface MeetupCounterpart {
+  display_name: string | null;
+  verified: boolean;
+  fulfilled_count: number;
+  credit_score: number | null;
+}
+
+export interface MeetupMatchDetail {
+  id: string;
+  status: MeetupMatchStatus;
+  score: number;
+  reasons: string[];
+  you_accepted: boolean;
+  they_accepted: boolean;
+  confirmed_at: string | null;
+  own_request_id: string;
+  venue_type: VenueType;
+  venue_name: string;
+  scene: SceneType;
+  window_start: string;
+  window_end: string;
+  party_size: number;
+  counterpart: MeetupCounterpart;
+}
+
 export interface Stake {
   id: string;
   amount_mon: number;
