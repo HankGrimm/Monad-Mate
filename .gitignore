@@ -27,3 +27,4 @@ contracts/cache/
 contracts/lib/
 contracts/broadcast/
 stitch/
+.trae/
