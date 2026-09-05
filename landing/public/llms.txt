@@ -13,9 +13,9 @@ MonadMate matches people who are physically in the same venue right now and want
 - Managed accounts: email or phone login provisions a custodial account with no seed phrase and no gas prompts. Users can link an external wallet to take self-custody at any time.
 
 ## API
-Base URL: https://monad-mate-trust-api-production.up.railway.app
-Docs: https://monad-mate-trust-api-production.up.railway.app/docs
-OpenAPI: https://monad-mate-landing-production.up.railway.app/openapi.json
+Base URL: http://localhost:9999/api
+Docs: http://localhost:9999/api/docs
+OpenAPI: http://localhost:9999/openapi.json
 
 ## Key Endpoints
 - POST /v1/wallet/login/code — request a passwordless login code (managed account)

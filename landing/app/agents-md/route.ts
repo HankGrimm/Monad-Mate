@@ -9,10 +9,10 @@ Built for the EasyA × Consensus Miami Hackathon 2026 by HankGrimm.
 ## API Base
 
 \`\`\`
-https://monad-mate-trust-api-production.up.railway.app
+http://localhost:9999/api
 \`\`\`
 
-Interactive docs: \`https://monad-mate-trust-api-production.up.railway.app/docs\`
+Interactive docs: \`http://localhost:9999/api/docs\`
 
 ## Authentication (for agents)
 

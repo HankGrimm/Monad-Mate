@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 # MonadMate — Full Machine-Readable Manifest
 # https://monad-mate-landing-production.up.railway.app
 # Updated: 2026-09-05
+=======
+# Monad Mate — Full Machine-Readable Manifest
+# http://localhost:9999
+# Updated: 2026-05-06
+>>>>>>> b2d2c3a3293d56210df5ecc24af0950fd254d2f0
 
 ## IDENTITY
 Name: MonadMate
@@ -9,8 +15,8 @@ Type: Instant offline companion matching — Web3 / Monad
 Hackathon: EasyA × Consensus Miami 2026
 Built by: HankGrimm (https://github.com/HankGrimm)
 Network: Monad (testnet), Base (Coinbase x402)
-API: https://monad-mate-trust-api-production.up.railway.app
-Docs: https://monad-mate-trust-api-production.up.railway.app/docs
+API: http://localhost:9999/api
+Docs: http://localhost:9999/api/docs
 
 ## HOW IT WORKS
 1. Sign in with an email or phone code (managed account, no seed phrase or gas) or connect MetaMask/Rabby

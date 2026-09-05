@@ -1,5 +1,5 @@
 # Monad Mate — SDK & Package Directory
-# https://monad-mate-landing-production.up.railway.app/sdks.txt
+# http://localhost:9999/sdks.txt
 
 ## Python Packages
 
@@ -37,6 +37,6 @@ Tools:
 Repo: https://github.com/HankGrimm/monad-mate-trust-api/tree/main/packages/x402-monad
 
 ## API
-Base URL: https://monad-mate-trust-api-production.up.railway.app
+Base URL: http://localhost:9999/api
 Free tier: Yes (testnet)
 Auth: Wallet signature → JWT

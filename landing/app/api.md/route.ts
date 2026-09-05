@@ -1,8 +1,8 @@
 const API_MD = `# Monad Mate API Reference
 
-Base URL: \`https://monad-mate-trust-api-production.up.railway.app\`
+Base URL: \`http://localhost:9999/api\`
 
-Full interactive docs: \`https://monad-mate-trust-api-production.up.railway.app/docs\`
+Full interactive docs: \`http://localhost:9999/api/docs\`
 
 ## Authentication
 

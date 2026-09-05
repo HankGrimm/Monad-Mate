@@ -26,7 +26,7 @@ MonadMate matches people who are in the same mall or supermarket right now and w
 
 ## API Base
 ```
-https://monad-mate-trust-api-production.up.railway.app
+http://localhost:9999/api
 ```
 
 ## Authentication
