@@ -143,7 +143,7 @@ function MatchDetail({ id }: { id: string }) {
       // can't confirm on-chain.
       if (reqs?.onchain_required) {
         setStage("Confirm the transaction in your wallet…");
-        const sent = await sendDeposit(reqs);
+        const sent = await sendDeposit(reqs, id);
         txHash = sent.txHash;
         setStage("Verifying on Monad testnet…");
       }

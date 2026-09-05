@@ -303,10 +303,16 @@ class MonadService:
     ) -> dict:
         """Check that *tx_hash* is a real MON deposit for this stake.
 
-        Verifies, in order: the transaction exists, it succeeded, it was sent by
-        ``expected_from``, it paid the deposit address, and the value is at least
-        ``expected_amount_mon``. A small tolerance is allowed on the amount to
-        absorb float/wei rounding in the client.
+        Verifies, in order: the transaction exists and was mined successfully, it
+        was sent by ``expected_from``, it paid the deposit address, and the value
+        is at least ``expected_amount_mon``. A small tolerance is allowed on the
+        amount to absorb float/wei rounding in the client.
+
+        The client hands over the hash the moment the wallet accepts it, so the
+        transaction is usually still pending. The receipt is therefore *waited*
+        for rather than read once — Monad blocks are ~300ms, so this normally
+        resolves immediately, and a genuinely stuck transaction reports
+        ``not_confirmed_yet`` instead of a misleading failure.
 
         Returns ``{"verified": bool, "reason": str, "value_mon": float | None}``.
         The caller decides whether an unverified deposit is fatal — that depends
@@ -325,10 +331,22 @@ class MonadService:
 
             w3 = Web3(Web3.HTTPProvider(_rpc_url()))
             tx = w3.eth.get_transaction(tx_hash)
-            receipt = w3.eth.get_transaction_receipt(tx_hash)
+
+            try:
+                receipt = w3.eth.wait_for_transaction_receipt(
+                    tx_hash, timeout=20, poll_latency=0.5
+                )
+            except Exception:
+                return {
+                    "verified": False,
+                    "reason": "not_confirmed_yet",
+                    "value_mon": None,
+                }
 
             if receipt is None or receipt.get("status") != 1:
-                return {"verified": False, "reason": "tx_failed", "value_mon": None}
+                # Mined but reverted. The most common cause is a duplicate
+                # deposit for the same (staker, roomId) vault.
+                return {"verified": False, "reason": "tx_reverted", "value_mon": None}
 
             to_addr = (tx.get("to") or "").lower()
             if to_addr != target.lower():
