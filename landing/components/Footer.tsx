@@ -1,7 +1,13 @@
+"use client";
+
+import { useLang } from "@/lib/i18n";
+
 const GITHUB_URL = "https://github.com/HankGrimm/monad-mate-trust-api";
 const API_URL = "/api";
 
 export default function Footer() {
+  const { d } = useLang();
+
   return (
     <footer className="border-t border-brand-border py-12 px-6">
       <div className="max-w-6xl mx-auto">
@@ -20,7 +26,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
             >
-              API Docs
+              {d.footer.apiDocs}
             </a>
             <a
               href={GITHUB_URL}
@@ -36,7 +42,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
             >
-              Contributing
+              {d.footer.contributing}
             </a>
             <a
               href={GITHUB_URL + "/blob/main/LICENSE"}
@@ -44,15 +50,13 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="hover:text-white transition-colors"
             >
-              MIT License
+              {d.footer.license}
             </a>
           </div>
         </div>
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-brand-border text-xs text-white/30">
-          <span>
-            Built for EasyA × Consensus Miami 2026 · Monad + Hedera + Base
-          </span>
+          <span>{d.footer.builtFor}</span>
           <span>
             API:{" "}
             <a
@@ -61,7 +65,7 @@ export default function Footer() {
               rel="noopener noreferrer"
               className="text-green-400 hover:underline"
             >
-              Live ↗
+              {d.footer.live}
             </a>
           </span>
         </div>

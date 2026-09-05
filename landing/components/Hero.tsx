@@ -1,9 +1,13 @@
 "use client";
 
+import { useLang } from "@/lib/i18n";
+
 const GITHUB_URL = "https://github.com/HankGrimm/monad-mate-trust-api";
 const API_URL = "/api";
 
 export default function Hero() {
+  const { d } = useLang();
+
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-16 overflow-hidden bg-hero-gradient">
       {/* Background orbs */}
@@ -15,27 +19,19 @@ export default function Hero() {
 
       {/* Headline */}
       <h1 className="relative text-5xl md:text-7xl font-black tracking-tight leading-[1.05] mb-6 max-w-4xl">
-        Find someone to hang out with
+        {d.hero.headline1}
         <br />
-        <span className="text-gradient">in the mall you're already in.</span>
+        <span className="text-gradient">{d.hero.headline2}</span>
       </h1>
 
       {/* Subheadline */}
       <p className="relative text-lg md:text-xl text-white/60 max-w-2xl mb-10 leading-relaxed">
-        Post what you want to do in the next hour — a meal, an arcade round, a
-        shopping run. AI matches you with someone at the same venue, plans the
-        first hour, and a small MON deposit keeps you both honest.
+        {d.hero.sub}
       </p>
 
       {/* Social proof chips */}
       <div className="relative flex flex-wrap justify-center gap-3 mb-10 text-sm">
-        {[
-          { icon: "📍", label: "Same-Venue Matching" },
-          { icon: "🤖", label: "AI Match + Plan" },
-          { icon: "💰", label: "MON Commitment Deposit" },
-          { icon: "🎖️", label: "Soulbound Credentials" },
-          { icon: "📱", label: "No Seed Phrase" },
-        ].map((chip) => (
+        {d.hero.chips.map((chip) => (
           <span
             key={chip.label}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/70"
@@ -52,7 +48,7 @@ export default function Hero() {
           href="/app"
           className="px-8 py-4 rounded-full bg-cta-gradient text-white font-semibold text-lg hover:opacity-90 transition-opacity glow-violet"
         >
-          Get the App →
+          {d.hero.ctaApp}
         </a>
         <a
           href={API_URL + "/docs"}
@@ -60,7 +56,7 @@ export default function Hero() {
           rel="noopener noreferrer"
           className="px-8 py-4 rounded-full border border-brand-violet/50 text-white/80 font-semibold text-lg hover:border-brand-violet hover:text-white transition-all"
         >
-          Live API Docs
+          {d.hero.ctaDocs}
         </a>
         <a
           href={GITHUB_URL}
@@ -68,7 +64,7 @@ export default function Hero() {
           rel="noopener noreferrer"
           className="px-8 py-4 rounded-full border border-white/20 text-white/60 font-semibold text-lg hover:text-white hover:border-white/40 transition-all"
         >
-          ★ Open Source
+          {d.hero.ctaOpen}
         </a>
       </div>
 
@@ -90,7 +86,7 @@ export default function Hero() {
               </span>
             </div>
             <div className="mt-2 text-[11px] text-white/40">
-              📍 Taikoo Li Mall · next 60 min · Dining
+              {d.hero.phone.location}
             </div>
           </div>
           {/* Match card */}
@@ -100,34 +96,33 @@ export default function Hero() {
                 L
               </div>
               <div>
-                <div className="font-semibold text-sm">Lin · 4F, same mall</div>
+                <div className="font-semibold text-sm">{d.hero.phone.name}</div>
                 <div className="text-xs text-white/50">
-                  92% match · 7 meetups kept
+                  {d.hero.phone.match}
                 </div>
               </div>
             </div>
             <div className="text-xs text-white/60 leading-relaxed mb-3">
-              "Both free until 8pm and both want hotpot. Verified, and has kept
-              every meetup so far."
+              {d.hero.phone.quote}
             </div>
             <div className="flex gap-2">
               <button className="flex-1 py-2 rounded-xl bg-brand-violet/20 border border-brand-violet/40 text-xs text-violet-300 font-medium">
-                Pass
+                {d.hero.phone.pass}
               </button>
               <button className="flex-1 py-2 rounded-xl bg-cta-gradient text-white text-xs font-semibold">
-                Let's go
+                {d.hero.phone.letsGo}
               </button>
             </div>
           </div>
           {/* Stake status */}
           <div className="mx-4 p-3 rounded-xl bg-white/5 border border-white/10">
             <div className="text-xs text-white/50 mb-1">
-              Your commitment deposit
+              {d.hero.phone.depositLabel}
             </div>
             <div className="flex items-center justify-between">
               <span className="font-bold text-green-400">0.50 MON</span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                Refunds on check-in
+                {d.hero.phone.refundNote}
               </span>
             </div>
           </div>
