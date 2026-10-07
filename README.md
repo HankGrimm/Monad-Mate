@@ -12,6 +12,41 @@ You post an intent — a meal, an arcade round, a shopping run — scoped to the
 
 ---
 
+## Screenshots
+
+### Landing page
+
+<div align="center">
+  <img src="docs/screenshots/01-landing-hero.webp" alt="Monad Mate landing page — hero section with the phone mockup" width="100%" />
+</div>
+
+### The app
+
+Real screens from the app running on a phone.
+
+<table align="center">
+  <tr>
+    <td align="center" width="50%"><img src="docs/screenshots/02-app-signin.webp" alt="Sign-in screen offering email, phone, or wallet connection" width="340" /></td>
+    <td align="center" width="50%"><img src="docs/screenshots/04-app-mobile.webp" alt="Home screen: pick a venue and a scene, with the verification gate blocking posting" width="340" /></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Sign in — no seed phrase, no gas</em></td>
+    <td align="center"><em>Post an intent — venue, scene, then match</em></td>
+  </tr>
+</table>
+
+Sign-in is deliberately passwordless: an email or phone code provisions a managed account, and **Connect a wallet instead** switches to self-custody. The right-hand screen shows the gate that keeps the matching pool honest — an unverified account can browse but cannot post or accept a meetup until a phone number is verified.
+
+### Live API — 70 endpoints
+
+<div align="center">
+  <img src="docs/screenshots/03-api-docs.webp" alt="Swagger UI listing the users, personas and rooms endpoint groups" width="100%" />
+</div>
+
+> Screenshots captured from the running local stack — `landing/` on :3000, `app/` on :3001, Swagger UI on :8000 — on an iPhone over the LAN, not mocked up.
+
+---
+
 ## The Problem
 
 You're alone in a mall on a Saturday and want company for the next hour. Existing social apps match you with someone across the city for some unspecified future date. By the time a chat warms up, the moment is gone — and when plans do form, there's no cost to ghosting.
@@ -246,6 +281,8 @@ The `landing/` directory contains a Next.js landing page with:
 - Tech stack overview
 - Web dApp / PWA download CTAs
 - Open source section with planned packages
+
+See the [hero screenshot](#screenshots) for what this looks like rendered.
 
 ```bash
 cd landing
