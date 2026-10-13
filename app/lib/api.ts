@@ -4,6 +4,11 @@
  * Requests go to `/api/...` on this app's own origin and are rewritten to the
  * backend by `next.config.mjs`, so the browser never makes a cross-origin call
  * and the backend URL is never baked into the bundle.
+ *
+ * The path must carry the app's `basePath` ("/app"): Next.js prepends basePath
+ * to the rewrite source, so a bare "/api/..." would miss the rewrite and fall
+ * through to the framework's own 404 page. NEXT_PUBLIC_BASE_PATH is injected
+ * from next.config.mjs to keep a single source of truth.
  */
 import { clearSession, getToken } from "./auth";
 import type {
@@ -27,7 +32,8 @@ import type {
   WalletAccountInfo,
 } from "./types";
 
-const BASE = "/api/v1";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const BASE = `${BASE_PATH}/api/v1`;
 
 export class ApiError extends Error {
   constructor(
