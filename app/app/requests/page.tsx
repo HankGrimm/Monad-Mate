@@ -13,15 +13,23 @@ import { api, ApiError } from "@/lib/api";
 import { formatDate, formatWindow, sceneIcon, sceneLabel } from "@/lib/format";
 import type { MeetupRequest, MeetupRequestStatus } from "@/lib/types";
 
-const TONES: Record<MeetupRequestStatus, "brand" | "verified" | "neutral" | "hot"> =
-  {
-    open: "brand",
-    matched: "hot",
-    confirmed: "verified",
-    fulfilled: "verified",
-    expired: "neutral",
-    cancelled: "neutral",
-  };
+const TONES: Record<MeetupRequestStatus, "brand" | "verified" | "neutral" | "hot"> = {
+  open: "brand",
+  matched: "hot",
+  confirmed: "verified",
+  fulfilled: "verified",
+  expired: "neutral",
+  cancelled: "neutral",
+};
+
+const STATUS_LABELS: Record<MeetupRequestStatus, string> = {
+  open: "Looking",
+  matched: "Match found",
+  confirmed: "Confirmed",
+  fulfilled: "Completed",
+  expired: "Expired",
+  cancelled: "Cancelled",
+};
 
 export default function RequestsPage() {
   return <RequireAuth>{() => <RequestList />}</RequireAuth>;
@@ -76,10 +84,18 @@ function RequestList() {
         ) : (
           <>
             {live && live.length > 0 && (
-              <section className="flex flex-col gap-space-sm">
-                <span className="px-space-2xs text-label-sm uppercase tracking-wider text-on-surface-variant">
-                  Active
-                </span>
+              <section
+                className="flex flex-col gap-space-sm"
+                aria-labelledby="active-requests-heading"
+              >
+                <div className="flex items-baseline justify-between px-space-2xs">
+                  <h2 id="active-requests-heading" className="text-label-lg text-on-surface">
+                    Active
+                  </h2>
+                  <span className="text-body-sm text-on-surface-variant">
+                    {live.length} {live.length === 1 ? "request" : "requests"}
+                  </span>
+                </div>
                 {live.map((r) => (
                   <RequestCard key={r.id} request={r} />
                 ))}
@@ -87,10 +103,18 @@ function RequestList() {
             )}
 
             {past && past.length > 0 && (
-              <section className="flex flex-col gap-space-sm">
-                <span className="px-space-2xs text-label-sm uppercase tracking-wider text-on-surface-variant">
-                  Past
-                </span>
+              <section
+                className="flex flex-col gap-space-sm"
+                aria-labelledby="past-requests-heading"
+              >
+                <div className="flex items-baseline justify-between px-space-2xs">
+                  <h2 id="past-requests-heading" className="text-label-lg text-on-surface">
+                    Past
+                  </h2>
+                  <span className="text-body-sm text-on-surface-variant">
+                    {past.length} {past.length === 1 ? "request" : "requests"}
+                  </span>
+                </div>
                 {past.map((r) => (
                   <RequestCard key={r.id} request={r} muted />
                 ))}
@@ -115,8 +139,11 @@ function RequestCard({
   return (
     <Link
       href={`/requests/${request.id}`}
-      className={`flex items-center gap-space-sm rounded-lg bg-surface-container p-space-md shadow-float transition-transform active:scale-[0.99] ${
-        muted ? "opacity-60" : ""
+      aria-label={`${sceneLabel(request.scene)} at ${request.venue_name}, ${STATUS_LABELS[request.status]}`}
+      className={`flex items-center gap-space-sm rounded-lg p-space-md transition-all active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+        muted
+          ? "border border-surface-container-high bg-surface-container-low/70 hover:bg-surface-container"
+          : "bg-surface-container shadow-float hover:bg-surface-container-high"
       }`}
     >
       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-primary">
@@ -135,7 +162,7 @@ function RequestCard({
       </span>
       <span className="flex shrink-0 flex-col items-end gap-space-2xs">
         <StatusChip tone={TONES[request.status]} pulse={request.status === "open"}>
-          {request.status}
+          {STATUS_LABELS[request.status]}
         </StatusChip>
         <Icon name="chevron_right" size={18} className="text-outline" />
       </span>

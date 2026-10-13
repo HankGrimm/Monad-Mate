@@ -113,7 +113,7 @@ function PostIntent({ user }: { user: User }) {
         }
       />
 
-      <main className="flex flex-1 flex-col gap-space-xl px-gutter-mobile pb-28 pt-20">
+      <main className="flex flex-1 flex-col gap-space-lg px-gutter-mobile pb-36 pt-20">
         {loading ? (
           <ScreenLoader label="Checking for an active request" />
         ) : (
@@ -126,8 +126,12 @@ function PostIntent({ user }: { user: User }) {
 
             {/* Venue */}
             <section className="flex flex-col gap-space-sm">
-              <SectionLabel icon="my_location" text="Where you are" />
-              <div className="flex gap-space-sm overflow-x-auto no-scrollbar -mx-gutter-mobile px-gutter-mobile pb-1">
+              <SectionLabel icon="my_location" text="Choose a venue" />
+              <div
+                className="flex gap-space-sm overflow-x-auto no-scrollbar -mx-gutter-mobile px-gutter-mobile pb-1"
+                role="group"
+                aria-label="Choose a venue"
+              >
                 {VENUES.map((v) => {
                   const selected = v.key === venueKey;
                   return (
@@ -135,6 +139,7 @@ function PostIntent({ user }: { user: User }) {
                       key={v.key}
                       type="button"
                       onClick={() => setVenueKey(v.key)}
+                      aria-pressed={selected}
                       className={`min-w-[190px] shrink-0 rounded p-space-md text-left transition-all active:scale-[0.98] ${
                         selected
                           ? "bg-surface-container-highest shadow-beacon"
@@ -148,8 +153,8 @@ function PostIntent({ user }: { user: User }) {
                           className={selected ? "text-primary" : "text-on-surface-variant"}
                         />
                         {selected && (
-                          <StatusChip tone="verified" pulse>
-                            Here
+                          <StatusChip tone="brand" icon="check_circle">
+                            Selected
                           </StatusChip>
                         )}
                       </div>
@@ -168,7 +173,11 @@ function PostIntent({ user }: { user: User }) {
             {/* Scene */}
             <section className="flex flex-col gap-space-sm">
               <SectionLabel icon="interests" text="What you want to do" />
-              <div className="flex flex-col gap-space-xs">
+              <div
+                className="flex flex-col gap-space-xs"
+                role="group"
+                aria-label="Choose an activity"
+              >
                 {SCENES.map((s) => {
                   const selected = s.value === scene;
                   return (
@@ -176,6 +185,7 @@ function PostIntent({ user }: { user: User }) {
                       key={s.value}
                       type="button"
                       onClick={() => setScene(s.value)}
+                      aria-pressed={selected}
                       className={`flex items-center gap-space-sm rounded p-space-md text-left transition-all active:scale-[0.99] ${
                         selected
                           ? "bg-surface-container-highest shadow-beacon"
@@ -211,12 +221,17 @@ function PostIntent({ user }: { user: User }) {
             {/* Duration + party size */}
             <section className="flex flex-col gap-space-sm">
               <SectionLabel icon="schedule" text="How long you have" />
-              <div className="flex gap-space-xs">
+              <div
+                className="flex gap-space-xs"
+                role="group"
+                aria-label="Choose meetup duration"
+              >
                 {DURATIONS.map((d) => (
                   <button
                     key={d}
                     type="button"
                     onClick={() => setDuration(d)}
+                    aria-pressed={duration === d}
                     className={`h-11 flex-1 rounded-full text-label-md transition-all active:scale-95 ${
                       duration === d
                         ? "bg-surface-container-highest text-on-surface shadow-beacon"
@@ -250,14 +265,27 @@ function PostIntent({ user }: { user: User }) {
                 </div>
               </div>
 
+              <label
+                htmlFor="meetup-note"
+                className="flex flex-col gap-space-2xs text-label-md text-on-surface"
+              >
+                Add a note
+                <span className="text-body-sm font-normal text-on-surface-variant">
+                  Optional · help people know what you have in mind
+                </span>
+              </label>
               <input
+                id="meetup-note"
                 type="text"
                 value={note}
                 maxLength={300}
                 onChange={(e) => setNote(e.target.value)}
-                placeholder="What are you in the mood for?"
+                placeholder="e.g. Looking for a cozy noodle place"
                 className="h-[50px] rounded border border-surface-container-high bg-surface-container-low px-space-md text-body-md text-on-surface placeholder:text-outline focus:border-primary-container focus:shadow-[0_0_0_3px_rgba(124,58,237,0.25)] focus:outline-none"
               />
+              <span className="self-end text-label-sm text-on-surface-variant">
+                {note.length}/300
+              </span>
             </section>
 
             {/* Safety preferences */}
@@ -265,12 +293,26 @@ function PostIntent({ user }: { user: User }) {
               <button
                 type="button"
                 onClick={() => setSafetyOpen((o) => !o)}
+                aria-expanded={safetyOpen}
+                aria-controls="safety-preferences"
                 className="flex items-center justify-between rounded bg-surface-container-low p-space-md active:scale-[0.99] transition-transform"
               >
                 <span className="flex items-center gap-space-sm">
                   <Icon name="shield" size={20} className="text-primary" />
-                  <span className="text-label-lg text-on-surface">
-                    Safety preferences
+                  <span className="min-w-0 text-left">
+                    <span className="block text-label-lg text-on-surface">
+                      Safety preferences
+                    </span>
+                    <span className="block text-body-sm text-on-surface-variant">
+                      {sameGenderOnly || requireVerified
+                        ? `${[
+                            sameGenderOnly && "Same gender",
+                            requireVerified && "Verified people",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")} selected`
+                        : "Optional filters · none selected"}
+                    </span>
                   </span>
                 </span>
                 <Icon
@@ -281,7 +323,7 @@ function PostIntent({ user }: { user: User }) {
               </button>
 
               {safetyOpen && (
-                <div className="flex animate-fade-in flex-col gap-space-xs">
+                <div id="safety-preferences" className="flex animate-fade-in flex-col gap-space-xs">
                   <Toggle
                     label="Only match same gender"
                     hint={
@@ -308,7 +350,7 @@ function PostIntent({ user }: { user: User }) {
               )}
             </section>
 
-            <div className="mt-auto flex flex-col gap-space-sm pt-space-md">
+            <div className="sticky bottom-[88px] z-20 -mx-gutter-mobile flex flex-col gap-space-sm border-t border-surface-container-high bg-surface/95 px-gutter-mobile pb-space-sm pt-space-md backdrop-blur-xl">
               <GradientButton
                 onClick={submit}
                 loading={busy}
@@ -318,8 +360,16 @@ function PostIntent({ user }: { user: User }) {
                 Find someone
               </GradientButton>
               {active !== null && (
-                <p className="text-center text-body-sm text-outline">
-                  Cancel your active request before posting a new one.
+                <Link
+                  href={`/requests/${active.id}`}
+                  className="text-center text-body-sm text-primary underline-offset-2 hover:underline"
+                >
+                  Open your active request to cancel or manage it.
+                </Link>
+              )}
+              {!verified && active === null && (
+                <p className="text-center text-body-sm text-on-surface-variant">
+                  Verify your account to post a meetup.
                 </p>
               )}
             </div>
@@ -355,7 +405,8 @@ function Stepper({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-high text-on-surface transition-all active:scale-90 ${
+      aria-label={icon === "add" ? "Increase party size" : "Decrease party size"}
+      className={`flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-high text-on-surface transition-all active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         disabled ? "opacity-40 pointer-events-none" : ""
       }`}
     >
@@ -389,13 +440,14 @@ function Toggle({
       </span>
       <input
         type="checkbox"
-        className="sr-only"
+        className="peer sr-only"
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
       />
       <span
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+        aria-hidden="true"
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface ${
           checked ? "bg-primary-container shadow-beacon" : "bg-surface-container-highest"
         }`}
       >
