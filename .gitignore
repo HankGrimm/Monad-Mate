@@ -22,6 +22,8 @@ app/out/
 *.db
 *.sqlite
 *.sqlite3
+# 本地 Postgres 数据目录（pgserver 以 pg_ctl 常驻，47MB+ 含运行时状态，绝不入库）
+.pgdata/
 contracts/out/
 contracts/cache/
 contracts/lib/
